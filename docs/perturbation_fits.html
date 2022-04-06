@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>perturbation_fits &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="index.html" />
+    <link rel="prev" title="full_sky" href="full_sky.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="full_sky.html" title="full_sky"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <div class="section" id="module-bubble_collisions.perturbation_fits">
+<span id="perturbation-fits"></span><h1>perturbation_fits<a class="headerlink" href="#module-bubble_collisions.perturbation_fits" title="Permalink to this headline">¶</a></h1>
+<p>A collection of functions for calculating fitting parameters.
+Also includes some convenience functions for plotting the fits.</p>
+<p>Note that I never got the quadratic fit to work very well with variable
+collision boundary xi0.</p>
+<dl class="function">
+<dt id="bubble_collisions.perturbation_fits.stepFunction">
+<tt class="descname">stepFunction</tt><big>(</big><em>x</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/perturbation_fits.html#stepFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.perturbation_fits.stepFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns (0, 0.5, 1) for x (&lt;, =, &gt;) 0.0</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.perturbation_fits.powerFit">
+<tt class="descname">powerFit</tt><big>(</big><em>xi</em>, <em>xi0</em>, <em>A</em>, <em>kappa</em>, <em>xi_scale=0.05</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/perturbation_fits.html#powerFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.perturbation_fits.powerFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Power-law function.</p>
+<p>R = A Theta(xi-xi0) [(xi-xi0)/xi_scale]^kappa</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.perturbation_fits.quadFit">
+<tt class="descname">quadFit</tt><big>(</big><em>xi</em>, <em>xi0</em>, <em>a</em>, <em>b</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/perturbation_fits.html#quadFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.perturbation_fits.quadFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Quadratic function.</p>
+<p>R = Theta(xi-xi0) [a (xi-x0) + b (xi-x0)^2]</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.perturbation_fits.calcFit">
+<tt class="descname">calcFit</tt><big>(</big><em>xi</em>, <em>R</em>, <em>fitFunc=&lt;function powerFit at 0x1074287d0&gt;</em>, <em>Rmin=0.0001</em>, <em>Rmax=0.001</em>, <em>start_params=(0.1</em>, <em>2)</em>, <em>weight_small_R=True</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/perturbation_fits.html#calcFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.perturbation_fits.calcFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the best-fit parameters for the given fitting function.</p>
+<p>Assumes that the input data is increasing in absolute value along the
+array, so it won&#8217;t work for full-sky bubbles.</p>
+<p>Weights are cho</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>xi</strong> (<em>array-like, one-dimensional</em>) &#8211; The independent variable.</li>
+<li><strong>R</strong> (<em>array-like, one-dimensional</em>) &#8211; The dependent variable to fit. Should be same length as xi.
+Assumed to have its absolute value generally increasing along the axis.</li>
+<li><strong>fitFunc</strong> (callable <tt class="docutils literal"><span class="pre">f(xi,</span> <span class="pre">xi0,</span> <span class="pre">*params)</span></tt>, optional) &#8211; </li>
+<li><strong>Rmin</strong> (<em>float, optional</em>) &#8211; Lower cutoff on input data R which it attempts to fit.</li>
+<li><strong>Rmax</strong> (<em>float, optional</em>) &#8211; Upper cutoff on input data R which it attempts to fit.</li>
+<li><strong>start_params</strong> (<em>tuple, optional</em>) &#8211; Initial guess for fitting parameters.</li>
+<li><strong>weight_small_R</strong> (<em>bool, optional</em>) &#8211; If True, weights are proportional to 1/R (capped at 1/Rmin).
+If False, weights are uniform.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">A tuple of best-fit parameters, including xi0.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.perturbation_fits.runAllFits">
+<tt class="descname">runAllFits</tt><big>(</big><em>fname</em>, <em>Rmin=0.0001</em>, <em>Rmax=0.001</em>, <em>verbose=False</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/perturbation_fits.html#runAllFits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.perturbation_fits.runAllFits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate fits for saved data, and saves new data to file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fname</strong> (<em>string</em>) &#8211; File name for data saved with np.save(). The saved data should be a
+structured array with fields &#8216;xi&#8217; and &#8216;R&#8217; which correspond to
+constant-length arrays for each data &#8216;point&#8217; (a point here being, for
+example, the entire perturbation for a single observer).</li>
+<li><strong>Rmin</strong> (<em>float, optional</em>) &#8211; To be passed to calcFit.</li>
+<li><strong>Rmax</strong> (<em>float, optional</em>) &#8211; To be passed to calcFit.</li>
+<li><strong>verbose</strong> (<em>bool, optional</em>) &#8211; If True, prints the index for each problem data point.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.perturbation_fits.plotFit">
+<tt class="descname">plotFit</tt><big>(</big><em>data</em>, <em>der=0</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/perturbation_fits.html#plotFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.perturbation_fits.plotFit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.perturbation_fits.plotFits">
+<tt class="descname">plotFits</tt><big>(</big><em>data</em>, <em>der=0</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/perturbation_fits.html#plotFits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.perturbation_fits.plotFits" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.perturbation_fits.plotPerturbations">
+<tt class="descname">plotPerturbations</tt><big>(</big><em>data</em>, <em>der=0</em>, <em>nsmooth=5</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/perturbation_fits.html#plotPerturbations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.perturbation_fits.plotPerturbations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots all perturbations in an array or grid of data.</p>
+<p>more red = lower row, or lower in the array
+smaller dashes = lower column</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="full_sky.html"
+                        title="previous chapter">full_sky</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/perturbation_fits.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="full_sky.html" title="full_sky"
+             >previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

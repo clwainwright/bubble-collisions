@@ -1,0 +1,168 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>bubble_analytics &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="index.html" />
+    <link rel="next" title="full_sky" href="full_sky.html" />
+    <link rel="prev" title="geodesics" href="geodesics.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="full_sky.html" title="full_sky"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="geodesics.html" title="geodesics"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <div class="section" id="module-bubble_collisions.bubble_analytics">
+<span id="bubble-analytics"></span><h1>bubble_analytics<a class="headerlink" href="#module-bubble_collisions.bubble_analytics" title="Permalink to this headline">¶</a></h1>
+<p>This module provides functions for finding (semi-)analytic approximations
+to the late-time field values and the comoving curvature perturbation.</p>
+<p>These used to live in <tt class="xref py py-mod docutils literal"><span class="pre">coordAndGeos</span></tt>
+(now <a class="reference internal" href="geodesics.html#module-bubble_collisions.geodesics" title="bubble_collisions.geodesics"><tt class="xref py py-mod docutils literal"><span class="pre">bubble_collisions.geodesics</span></tt></a>), but they&#8217;re not really related
+to anything else in that file.</p>
+<dl class="function">
+<dt id="bubble_collisions.bubble_analytics.analytic_delta_phi">
+<tt class="descname">analytic_delta_phi</tt><big>(</big><em>x_out</em>, <em>x_in</em>, <em>phi_in</em>, <em>eta</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/bubble_analytics.html#analytic_delta_phi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.bubble_analytics.analytic_delta_phi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evolve a wave to late times. Assumes the wave is moving to the left.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x_out</strong> (<em>array_like</em>) &#8211; The values of x at which the field should be calculated</li>
+<li><strong>x_in</strong> (<em>array_like</em>) &#8211; </li>
+<li><strong>phi_in</strong> (<em>array_like</em>) &#8211; The field as a function of x at the early time.</li>
+<li><strong>eta</strong> (<em>float</em>) &#8211; Future causal boundary of the waveform. Generally equal to
+0.5*(pi-xsep).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.bubble_analytics.analyticPerturbations">
+<tt class="descname">analyticPerturbations</tt><big>(</big><em>xi</em>, <em>fname</em>, <em>xsep</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/bubble_analytics.html#analyticPerturbations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.bubble_analytics.analyticPerturbations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find approximate perturbation from the bubble wall profile at the collision.</p>
+<p>This uses a number of approximations: the metric functions are 1 (test
+fields on de Sitter space), the potential is approximately linear, and xsep
+is big enough so that <tt class="docutils literal"><span class="pre">cosh(N)</span> <span class="pre">=</span> <span class="pre">(e^N)/2</span></tt> by the time the bubbles collide.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>xi</strong> (<em>array_like</em>) &#8211; </li>
+<li><strong>fname</strong> (<em>string</em>) &#8211; File name for simulation output fields</li>
+<li><strong>xsep</strong> (<em>float</em>) &#8211; The bubble separation</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">The perturbation as a function of the input xi.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="geodesics.html"
+                        title="previous chapter">geodesics</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="full_sky.html"
+                        title="next chapter">full_sky</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/bubble_analytics.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="full_sky.html" title="full_sky"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="geodesics.html" title="geodesics"
+             >previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

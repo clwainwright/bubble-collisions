@@ -1,0 +1,300 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>bubble_collisions.perturbation_fits &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <h1>Source code for bubble_collisions.perturbation_fits</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A collection of functions for calculating fitting parameters. </span>
+<span class="sd">Also includes some convenience functions for plotting the fits.</span>
+
+<span class="sd">Note that I never got the quadratic fit to work very well with variable</span>
+<span class="sd">collision boundary xi0.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">optimize</span>
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">.derivsAndSmoothing</span> <span class="kn">import</span> <span class="n">deriv14</span><span class="p">,</span> <span class="n">deriv23</span><span class="p">,</span> <span class="n">smooth</span>
+
+<div class="viewcode-block" id="stepFunction"><a class="viewcode-back" href="../../perturbation_fits.html#bubble_collisions.perturbation_fits.stepFunction">[docs]</a><span class="k">def</span> <span class="nf">stepFunction</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns (0, 0.5, 1) for x (&lt;, =, &gt;) 0.0&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span>
+</div>
+<div class="viewcode-block" id="powerFit"><a class="viewcode-back" href="../../perturbation_fits.html#bubble_collisions.perturbation_fits.powerFit">[docs]</a><span class="k">def</span> <span class="nf">powerFit</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">xi0</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">xi_scale</span><span class="o">=</span><span class="mf">0.05</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Power-law function.</span>
+
+<span class="sd">    R = A Theta(xi-xi0) [(xi-xi0)/xi_scale]^kappa</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">xi1</span> <span class="o">=</span> <span class="p">(</span><span class="n">xi</span><span class="o">-</span><span class="n">xi0</span><span class="p">)</span><span class="o">/</span><span class="n">xi_scale</span>
+    <span class="n">xi1</span> <span class="o">*=</span> <span class="n">stepFunction</span><span class="p">(</span><span class="n">xi1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">A</span><span class="o">*</span><span class="n">xi1</span><span class="o">**</span><span class="n">kappa</span>
+</div>
+<div class="viewcode-block" id="quadFit"><a class="viewcode-back" href="../../perturbation_fits.html#bubble_collisions.perturbation_fits.quadFit">[docs]</a><span class="k">def</span> <span class="nf">quadFit</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">xi0</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Quadratic function.</span>
+
+<span class="sd">    R = Theta(xi-xi0) [a (xi-x0) + b (xi-x0)^2]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">xi1</span> <span class="o">=</span> <span class="n">xi</span><span class="o">-</span><span class="n">xi0</span>
+    <span class="n">xi1</span> <span class="o">*=</span> <span class="n">stepFunction</span><span class="p">(</span><span class="n">xi1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">a</span><span class="o">*</span><span class="n">xi1</span> <span class="o">+</span> <span class="n">b</span><span class="o">*</span><span class="n">xi1</span><span class="o">**</span><span class="mi">2</span>
+</div>
+<div class="viewcode-block" id="calcFit"><a class="viewcode-back" href="../../perturbation_fits.html#bubble_collisions.perturbation_fits.calcFit">[docs]</a><span class="k">def</span> <span class="nf">calcFit</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">fitFunc</span><span class="o">=</span><span class="n">powerFit</span><span class="p">,</span> <span class="n">Rmin</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">Rmax</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+        <span class="n">start_params</span><span class="o">=</span><span class="p">(</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">weight_small_R</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the best-fit parameters for the given fitting function.</span>
+
+<span class="sd">    Assumes that the input data is increasing in absolute value along the</span>
+<span class="sd">    array, so it won&#39;t work for full-sky bubbles.</span>
+
+<span class="sd">    Weights are cho</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    xi : array-like, one-dimensional</span>
+<span class="sd">        The independent variable. </span>
+<span class="sd">    R : array-like, one-dimensional</span>
+<span class="sd">        The dependent variable to fit. Should be same length as xi.</span>
+<span class="sd">        Assumed to have its absolute value generally increasing along the axis.</span>
+<span class="sd">    fitFunc : callable ``f(xi, xi0, *params)``, optional</span>
+<span class="sd">    Rmin : float, optional</span>
+<span class="sd">        Lower cutoff on input data R which it attempts to fit.</span>
+<span class="sd">    Rmax : float, optional</span>
+<span class="sd">        Upper cutoff on input data R which it attempts to fit.</span>
+<span class="sd">    start_params : tuple, optional</span>
+<span class="sd">        Initial guess for fitting parameters.</span>
+<span class="sd">    weight_small_R: bool, optional</span>
+<span class="sd">        If True, weights are proportional to 1/R (capped at 1/Rmin).</span>
+<span class="sd">        If False, weights are uniform.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A tuple of best-fit parameters, including xi0.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">R</span><span class="p">)</span>
+    <span class="n">xi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span>
+    <span class="n">j1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">R</span><span class="p">))[</span><span class="nb">abs</span><span class="p">(</span><span class="n">R</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">Rmin</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">j2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">R</span><span class="p">))[</span><span class="nb">abs</span><span class="p">(</span><span class="n">R</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">Rmax</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">j1</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">j1</span> <span class="o">-</span> <span class="p">(</span><span class="n">j2</span><span class="o">-</span><span class="n">j1</span><span class="p">))</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">R</span><span class="p">[</span><span class="n">j1</span><span class="p">:</span><span class="n">j2</span><span class="p">]</span>
+    <span class="n">xi</span> <span class="o">=</span> <span class="n">xi</span><span class="p">[</span><span class="n">j1</span><span class="p">:</span><span class="n">j2</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">weight_small_R</span><span class="p">:</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">R</span><span class="p">),</span> <span class="n">Rmin</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">R</span><span class="p">)</span>
+    <span class="n">start_params</span> <span class="o">=</span> <span class="p">(</span><span class="n">xi</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span> <span class="o">+</span> <span class="n">start_params</span>
+    <span class="n">popt</span><span class="p">,</span> <span class="n">pcov</span> <span class="o">=</span> <span class="n">optimize</span><span class="o">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="n">fitFunc</span><span class="p">,</span> <span class="n">xi</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">start_params</span><span class="p">,</span>
+        <span class="n">w</span><span class="p">,</span> <span class="n">maxfev</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">popt</span>
+        </div>
+<div class="viewcode-block" id="runAllFits"><a class="viewcode-back" href="../../perturbation_fits.html#bubble_collisions.perturbation_fits.runAllFits">[docs]</a><span class="k">def</span> <span class="nf">runAllFits</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">Rmin</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">Rmax</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate fits for saved data, and saves new data to file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fname : string</span>
+<span class="sd">        File name for data saved with np.save(). The saved data should be a</span>
+<span class="sd">        structured array with fields &#39;xi&#39; and &#39;R&#39; which correspond to </span>
+<span class="sd">        constant-length arrays for each data &#39;point&#39; (a point here being, for</span>
+<span class="sd">        example, the entire perturbation for a single observer).</span>
+<span class="sd">    Rmin : float, optional</span>
+<span class="sd">        To be passed to calcFit.</span>
+<span class="sd">    Rmax : float, optional</span>
+<span class="sd">        To be passed to calcFit.</span>
+<span class="sd">    verbose : bool, optional</span>
+<span class="sd">        If True, prints the index for each problem data point.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">olddata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">olddata</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="n">olddata</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">descr</span> <span class="o">+</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s">&#39;fit_quad&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,)),</span>
+            <span class="p">(</span><span class="s">&#39;fit_power&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,))])</span>
+    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">olddata</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">olddata</span><span class="p">[</span><span class="n">field</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndenumerate</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">traceback</span>
+        <span class="n">xi</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="s">&#39;xi&#39;</span><span class="p">],</span> <span class="n">val</span><span class="p">[</span><span class="s">&#39;R&#39;</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">val</span><span class="p">[</span><span class="s">&#39;fit_power&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">calcFit</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">powerFit</span><span class="p">,</span> <span class="n">Rmin</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">val</span><span class="p">[</span><span class="s">&#39;fit_power&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&quot;error at index </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">index</span><span class="p">)</span>
+                <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">val</span><span class="p">[</span><span class="s">&#39;fit_quad&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">calcFit</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">quadFit</span><span class="p">,</span> <span class="n">Rmin</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">val</span><span class="p">[</span><span class="s">&#39;fit_quad&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&quot;error at index </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">index</span><span class="p">)</span>
+                <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">fname</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="s">&quot;_plus_fits.npy&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="plotFit"><a class="viewcode-back" href="../../perturbation_fits.html#bubble_collisions.perturbation_fits.plotFit">[docs]</a><span class="k">def</span> <span class="nf">plotFit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+    <span class="n">xi</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;xi&#39;</span><span class="p">]</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;R&#39;</span><span class="p">]</span>
+    <span class="n">Rpow</span> <span class="o">=</span> <span class="n">powerFit</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="o">*</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;fit_power&#39;</span><span class="p">])</span>
+    <span class="n">Rquad</span> <span class="o">=</span> <span class="n">quadFit</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="o">*</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;fit_quad&#39;</span><span class="p">])</span>
+    <span class="k">print</span> <span class="s">&quot;power fit params:&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;fit_power&#39;</span><span class="p">]</span>
+    <span class="k">print</span> <span class="s">&quot;quad fit params:&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;fit_quad&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">der</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="s">&#39;k&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">Rpow</span><span class="p">,</span> <span class="s">&#39;c&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">Rquad</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">der</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">deriv14</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">xi</span><span class="p">),</span> <span class="s">&#39;k&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">deriv14</span><span class="p">(</span><span class="n">Rpow</span><span class="p">,</span> <span class="n">xi</span><span class="p">),</span> <span class="s">&#39;c&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">deriv14</span><span class="p">(</span><span class="n">Rquad</span><span class="p">,</span> <span class="n">xi</span><span class="p">),</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">der</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">deriv23</span><span class="p">(</span><span class="n">smooth</span><span class="p">(</span><span class="n">R</span><span class="p">),</span> <span class="n">xi</span><span class="p">),</span> <span class="s">&#39;k&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">deriv23</span><span class="p">(</span><span class="n">smooth</span><span class="p">(</span><span class="n">Rpow</span><span class="p">),</span> <span class="n">xi</span><span class="p">),</span> <span class="s">&#39;c&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">deriv23</span><span class="p">(</span><span class="n">smooth</span><span class="p">(</span><span class="n">Rquad</span><span class="p">),</span> <span class="n">xi</span><span class="p">),</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">fields</span>
+    <span class="k">if</span> <span class="s">&#39;beta&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;beta=</span><span class="si">%0.4f</span><span class="s">, xsep=</span><span class="si">%0.1f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;beta&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;xsep&#39;</span><span class="p">]))</span>
+    <span class="k">elif</span> <span class="s">&#39;Delta_V&#39;</span> <span class="ow">in</span> <span class="n">fields</span> <span class="ow">and</span> <span class="s">&#39;bar_pos&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;bar_pos=</span><span class="si">%0.2f</span><span class="s">, Delta_V=</span><span class="si">%0.3f</span><span class="s">, xsep=</span><span class="si">%0.1f</span><span class="s">&quot;</span> <span class="o">%</span>
+            <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;bar_pos&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;Delta_V&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;xsep&#39;</span><span class="p">]))</span>
+        </div>
+<div class="viewcode-block" id="plotFits"><a class="viewcode-back" href="../../perturbation_fits.html#bubble_collisions.perturbation_fits.plotFits">[docs]</a><span class="k">def</span> <span class="nf">plotFits</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">Spectral</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="mf">1.</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;xi&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">R</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;R&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">Rpow</span> <span class="o">=</span> <span class="n">powerFit</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="o">*</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;fit_power&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">Rpow</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">dashes</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="n">ymin</span><span class="o">=-.</span><span class="mi">1</span><span class="p">,</span> <span class="n">ymax</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">r&quot;$\mathcal{R}(\xi)$&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">r&quot;$\xi$&quot;</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="plotPerturbations"><a class="viewcode-back" href="../../perturbation_fits.html#bubble_collisions.perturbation_fits.plotPerturbations">[docs]</a><span class="k">def</span> <span class="nf">plotPerturbations</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">nsmooth</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots all perturbations in an array or grid of data.</span>
+
+<span class="sd">    more red = lower row, or lower in the array</span>
+<span class="sd">    smaller dashes = lower column</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">winter</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="mf">1.</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">dash_length</span> <span class="o">=</span> <span class="n">j</span><span class="o">+</span><span class="mi">1</span>
+                <span class="n">dashes</span> <span class="o">=</span> <span class="p">(</span><span class="n">dash_length</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dash_length</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dashes</span> <span class="o">=</span> <span class="p">()</span>
+            <span class="n">xi</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;xi&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">R</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;R&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">nsmooth</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">R</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">(</span><span class="n">R</span><span class="p">,</span><span class="n">nsmooth</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">der</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">R</span><span class="p">)</span>
+                <span class="n">ylabel</span> <span class="o">=</span> <span class="s">r&quot;$\mathcal{R}(\xi)$&quot;</span>
+            <span class="k">elif</span> <span class="n">der</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="n">deriv14</span><span class="p">(</span><span class="n">R</span><span class="p">,</span><span class="n">xi</span><span class="p">)</span>
+                <span class="n">ylabel</span> <span class="o">=</span> <span class="s">r&quot;d$\mathcal{R}(\xi)$&quot;</span>
+            <span class="k">elif</span> <span class="n">der</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="n">deriv23</span><span class="p">((</span><span class="n">R</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span><span class="n">xi</span><span class="p">)</span>
+                <span class="n">ylabel</span> <span class="o">=</span> <span class="s">r&quot;$d^2\mathcal{R}(\xi)$&quot;</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">dashes</span><span class="o">=</span><span class="n">dashes</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="n">ymin</span><span class="o">=-.</span><span class="mi">1</span><span class="p">,</span> <span class="n">ymax</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">r&quot;$\xi$&quot;</span><span class="p">)</span>            </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

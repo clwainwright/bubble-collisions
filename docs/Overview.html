@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>Package Overview &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="index.html" />
+    <link rel="next" title="simulation" href="simulation.html" />
+    <link rel="prev" title="Welcome to the bubble_collisions documentation!" href="index.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="simulation.html" title="simulation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to the bubble_collisions documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <div class="section" id="package-overview">
+<h1>Package Overview<a class="headerlink" href="#package-overview" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="dependencies">
+<h3>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h3>
+<p>There are two routes to installing all of the dependencies need to run the <em>bubble_collisions</em> package. The easy way is to just download and install a large scientific python distribution. Both the <a class="reference external" href="https://www.enthought.com/products/epd/">Enthought Python Distribution</a> and the <a class="reference external" href="https://store.continuum.io/cshop/anaconda/">Anaconda</a> should work well.</p>
+<p>If you want to have more control over what your installation, you can use the Python Package Index to install all of the dependencies. First, make sure you have a recent (v2.7) version of Python running on your system. This comes standard on OS X Mavericks, or it can be downloaded from python.org.
+Next install <em>pip</em>, a python package manager. Just run <tt class="docutils literal"><span class="pre">easy_install</span> <span class="pre">pip</span></tt> from the command line (you might need to use <tt class="docutils literal"><span class="pre">sudo</span></tt>). If you want to maintain a clean installation, you should also install <a class="reference external" href="http://docs.python-guide.org/en/latest/dev/virtualenvs/">virtual environments</a> (<tt class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">virtualenv</span></tt>). This will let you create a dedicated python environment just for this project, without worrying about polluting namespace or breaking packages in other projects.</p>
+<p>Once you have python installed and the environment setup (<tt class="docutils literal"><span class="pre">virtualenv</span> <span class="pre">my_env;</span> <span class="pre">source</span> <span class="pre">my_env/bin/activate</span></tt>), you&#8217;re ready to start installing dependencies. The following are required:</p>
+<div class="highlight-python"><div class="highlight"><pre>pip install numpy --upgrade # should be at least v1.7
+pip install scipy
+pip install ipython[notebook]
+pip install matplotlib
+</pre></div>
+</div>
+<p>You may need to first install fortran compilers to get these working (if running OS X, these are part of the Xcode developer tools).</p>
+</div>
+<div class="section" id="package-installation">
+<h3>Package installation<a class="headerlink" href="#package-installation" title="Permalink to this headline">¶</a></h3>
+<p>Once the dependencies are installed, installing the actual package is very simple. Just navigate to <em>adaptiveGrid</em> folder and run <tt class="docutils literal"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">install</span></tt>. This should compile and install the package into the <em>site-packages</em> folder in your python distribution. After that, you should be able to run <tt class="docutils literal"><span class="pre">import</span> <span class="pre">bubble_collisions</span></tt> from a python prompt even outside of this directory.</p>
+<p>Additionally, if you want to recreate this documentation, download sphinx (<tt class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">sphinx;</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">sphinxcontrib-napoleon</span></tt>), navigate to the <em>docs</em> directory, and <tt class="docutils literal"><span class="pre">make</span> <span class="pre">html</span></tt>.</p>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p><em>To fill in later</em></p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Package Overview</a><ul>
+<li><a class="reference internal" href="#installation">Installation</a><ul>
+<li><a class="reference internal" href="#dependencies">Dependencies</a></li>
+<li><a class="reference internal" href="#package-installation">Package installation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to the bubble_collisions documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="simulation.html"
+                        title="next chapter">simulation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Overview.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="simulation.html" title="simulation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to the bubble_collisions documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>full_sky &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="index.html" />
+    <link rel="next" title="perturbation_fits" href="perturbation_fits.html" />
+    <link rel="prev" title="bubble_analytics" href="bubble_analytics.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="perturbation_fits.html" title="perturbation_fits"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="bubble_analytics.html" title="bubble_analytics"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <div class="section" id="module-bubble_collisions.full_sky">
+<span id="full-sky"></span><h1>full_sky<a class="headerlink" href="#module-bubble_collisions.full_sky" title="Permalink to this headline">¶</a></h1>
+<p>This module provides a way to calculate the comoving curvature perturbation
+for full-sky bubbles. Actually, it works equally well for less than
+full-sky bubbles.</p>
+<p>The basic idea is to work directly in the comoving gauge by first defining
+a comoving slice, which is equivalent to a surface of constant field.
+Of course, this will only work when there is only one field dimension,
+otherwise there&#8217;s not guaranteed to be any constant field surface.
+The basic strategy could easily be adapted to a constant energy or
+density surface for the case of multiple fields.
+The metric is then calculated along the slice, and, through a judicious choice
+of coordinates, made to match the anisotropic hyperbolic coordinates plus
+a perturbation. The metric perturbation determines the Ricci three-scalar,
+which can then be integrated to calculate the co-moving curvature perturbation.</p>
+<dl class="class">
+<dt id="bubble_collisions.full_sky.FullSkyPerturbation">
+<em class="property">class </em><tt class="descname">FullSkyPerturbation</tt><big>(</big><em>data</em>, <em>phi0=1.0</em>, <em>nx=2000</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/full_sky.html#FullSkyPerturbation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.full_sky.FullSkyPerturbation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>An object-oriented wrapper for the full-sky calculation.</p>
+<p>There are three steps to the full-sky calculation:</p>
+<ol class="arabic simple">
+<li>Calculate the (constant field) spatial slice.</li>
+<li>Determine the proper distance along the slice.</li>
+<li>Convert coordinates to the observer frame and calculate the
+perturbation.</li>
+</ol>
+<p>Because items 1 and 2 are the same for all observers, it makes sense to
+wrap the whole computation in a single object-oriented class. That way,
+the results from parts 1 and 2 can easily be reused (and examined) for
+different observers.</p>
+<p>If one wishes to use something other than a constant field value to define
+the spatial slice, one could just create a subclass and override
+<a class="reference internal" href="#bubble_collisions.full_sky.FullSkyPerturbation.calcSpatialSlice" title="bubble_collisions.full_sky.FullSkyPerturbation.calcSpatialSlice"><tt class="xref py py-meth docutils literal"><span class="pre">calcSpatialSlice()</span></tt></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>data</strong> (<em>string or data tuple</em>) &#8211; If a string, it should be the name of a simulation (fields) output
+file. If a tuple, it should be the data returned from
+<a class="reference internal" href="simulation.html#bubble_collisions.simulation.valsOnGrid" title="bubble_collisions.simulation.valsOnGrid"><tt class="xref py py-func docutils literal"><span class="pre">bubble_collisions.simulation.valsOnGrid()</span></tt></a>.</li>
+<li><strong>phi0</strong> (<em>float, optional</em>) &#8211; The field value defining the constant phi surface.</li>
+<li><strong>nx</strong> (<em>int, optional</em>) &#8211; Approximate number of points to use on the spatial slice.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="bubble_collisions.full_sky.FullSkyPerturbation.setup">
+<tt class="descname">setup</tt><big>(</big><em>data</em>, <em>nx</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/full_sky.html#FullSkyPerturbation.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.full_sky.FullSkyPerturbation.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets up the calculation (steps 1 and 2 above).
+Calculates the spatial slice and integrates distance along the slice.</p>
+<p>This is kept as a separate function from <tt class="docutils literal"><span class="pre">__init__</span></tt> so that it
+doesn&#8217;t need to be rewritten for potential subclasses.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bubble_collisions.full_sky.FullSkyPerturbation.calcSpatialSlice">
+<tt class="descname">calcSpatialSlice</tt><big>(</big><em>x0</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/full_sky.html#FullSkyPerturbation.calcSpatialSlice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.full_sky.FullSkyPerturbation.calcSpatialSlice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the time N along the spatial slice at x=x0.</p>
+<p>Can be overridden by subclasses for different slicings.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bubble_collisions.full_sky.FullSkyPerturbation.perturbationCenteredAt">
+<tt class="descname">perturbationCenteredAt</tt><big>(</big><em>x0</em>, <em>delta_xi=0.001</em>, <em>full_output=False</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/full_sky.html#FullSkyPerturbation.perturbationCenteredAt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.full_sky.FullSkyPerturbation.perturbationCenteredAt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the comoving curvature perturbation as a function of xi
+for an observer centered at x=x0. Note that a single spatial location
+along the slice will map to different values of xi (in the perturbed
+case) for different observers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x0</strong> (<em>float</em>) &#8211; Location of the observer along the slice in simulation coordinates.</li>
+<li><strong>delta_xi</strong> (<em>float, optional</em>) &#8211; Spacing between sequential output points.</li>
+<li><strong>full_output</strong> (<em>bool</em>) &#8211; If True, output xi0.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>xi0</strong> (<em>float, optional</em>) &#8211;
+The position of the observer in anisotropic hyperbolic coords.</li>
+<li><strong>xi</strong> (<em>array</em>) &#8211;
+The spatial anisotropic hyperbolic coordinate along the slice.</li>
+<li><strong>R</strong> (<em>array</em>) &#8211;
+The comoving curvature perturbation</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="bubble_analytics.html"
+                        title="previous chapter">bubble_analytics</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="perturbation_fits.html"
+                        title="next chapter">perturbation_fits</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/full_sky.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="perturbation_fits.html" title="perturbation_fits"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="bubble_analytics.html" title="bubble_analytics"
+             >previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

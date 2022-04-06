@@ -1,0 +1,350 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>simulation &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="index.html" />
+    <link rel="next" title="models" href="models.html" />
+    <link rel="prev" title="Package Overview" href="Overview.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="models.html" title="models"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Overview.html" title="Package Overview"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <div class="section" id="module-bubble_collisions.simulation">
+<span id="simulation"></span><h1>simulation<a class="headerlink" href="#module-bubble_collisions.simulation" title="Permalink to this headline">¶</a></h1>
+<p>Simulate colliding bubbles.</p>
+<p>This module contains all of the basic code for running a simulation.
+It acts as a state machine (as opposed to having an object-oriented interface),
+with the simulation state being set by the various <em>set_()</em> functions.
+Both the model and the monitor function will always need to be set before
+running, while all other parameters have working default values. However,
+one will generally also want to set the file parameters so that the
+simulation data can be retrieved. The simulation can then be run using
+<a class="reference internal" href="#bubble_collisions.simulation.runCollision" title="bubble_collisions.simulation.runCollision"><tt class="xref py py-func docutils literal"><span class="pre">runCollision()</span></tt></a>.</p>
+<p>Additionally, the functions <a class="reference internal" href="#bubble_collisions.simulation.readFromFile" title="bubble_collisions.simulation.readFromFile"><tt class="xref py py-func docutils literal"><span class="pre">readFromFile()</span></tt></a> and <a class="reference internal" href="#bubble_collisions.simulation.valsOnGrid" title="bubble_collisions.simulation.valsOnGrid"><tt class="xref py py-func docutils literal"><span class="pre">valsOnGrid()</span></tt></a>
+can be used to load a simulation from file and then use interpolation to
+find fields, metric functions, and/or Christoffel symbols as functions
+of the simulation coordinates.</p>
+<p>Note that this module does <em>not</em> provide any resources for calculating
+either the instanton data or transforming instanton data into initial
+conditions. Those jobs are handled by the <em>cosmoTransitions</em> package and the
+<a class="reference internal" href="collisionRunner.html#module-bubble_collisions.collisionRunner" title="bubble_collisions.collisionRunner"><tt class="xref py py-mod docutils literal"><span class="pre">bubble_collisions.collisionRunner</span></tt></a> module.</p>
+<div class="section" id="simulation-setup">
+<h2>Simulation setup<a class="headerlink" href="#simulation-setup" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="bubble_collisions.simulation.setModel">
+<tt class="descname">setModel</tt><big>(</big><em>model_obj</em><big>)</big><a class="headerlink" href="#bubble_collisions.simulation.setModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the model to be used in the simulation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_obj</strong> &#8211; Either a model object defined in <tt class="xref py py-mod docutils literal"><span class="pre">models</span></tt> or a python object
+(NOT IMPLEMENTED) that has methods <tt class="docutils literal"><span class="pre">V()</span></tt> and <tt class="docutils literal"><span class="pre">dV()</span></tt> as well as
+attribute <tt class="docutils literal"><span class="pre">nfields</span></tt>. The methods should accept input of shape
+<tt class="docutils literal"><span class="pre">(nx,</span> <span class="pre">ny)</span></tt> where <tt class="docutils literal"><span class="pre">ny</span> <span class="pre">&gt;=</span> <span class="pre">nfields</span></tt> and output arrays of shape
+<tt class="docutils literal"><span class="pre">(nx,)</span></tt> and <tt class="docutils literal"><span class="pre">(nx,</span> <span class="pre">nfields)</span></tt> for the potential and its derivative,
+respectively.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.simulation.setFileParams">
+<tt class="descname">setFileParams</tt><big>(</big><big>)</big><a class="headerlink" href="#bubble_collisions.simulation.setFileParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets parameters for outputting to file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fields_file_name</strong> (<em>string, optional</em>) &#8211; Name of the file which will store the fields and metric functions.</li>
+<li><strong>christoffel_file_name</strong> (<em>string, optional</em>) &#8211; Name of the file which will store the chrisoffel symbols.</li>
+<li><strong>xres</strong> (<em>int, optional</em>) &#8211; Distance between sequential outputs in the x direction. Defaults to
+1, indicating that every grid point along the time slice gets saved
+during every write. A value of 2 would save every other grid point, etc.</li>
+<li><strong>tout</strong> (<em>float or array, optional</em>) &#8211; If a float, indicates spacing between sequential output time-slices.
+If an array, specifies the times at which output should be written.
+Defaults to NULL (no output).</li>
+<li><strong>exact_tout</strong> (<em>bool, optional</em>) &#8211; If True, align the simulation time slices to match exactly with
+<em>tout</em>. Otherwise, the simulation writes to at the first time slices
+directly following the values specified in tout. Defaults to False.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.simulation.setIntegrationParams">
+<tt class="descname">setIntegrationParams</tt><big>(</big><big>)</big><a class="headerlink" href="#bubble_collisions.simulation.setIntegrationParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets parameters that govern integration behavior.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cfl</strong> (<em>float, optional</em>) &#8211; The <a class="reference external" href="http://en.wikipedia.org/wiki/Courant–Friedrichs–Lewy_condition">Courant number</a>
+used to calculate the temporal step size. Defaults to 0.2.</li>
+<li><strong>minStepsPerPeriod</strong> (<em>float, optional</em>) &#8211; The minimum number of time steps per period of oscillation given a
+characteristic mass scale <em>mass_osc</em>. That is, the time step will
+never be so large such that there are fewer than <em>minStepsPerPeriod</em>
+steps per oscillatory period. Defaults to 30.0.</li>
+<li><strong>mass_osc</strong> (<em>float, optional</em>) &#8211; The characteristic mass scale for oscillaitons. This should generally
+be the largest mass (given by eigenvalues of the Hessian matrix) in
+the model. Defaults to 1e-100 (effectively zero).</li>
+<li><strong>stepsPerRegrid</strong> (<em>int, optional</em>) &#8211; The number of integration steps taken in the coarsest region before
+recalculating the entire grid spacing. Defaults to 2.</li>
+<li><strong>minRegionWidth</strong> (<em>int, optional</em>) &#8211; Minimum number of grid points per integration region. Each integration
+region is integrated separately at each time step, with each region
+having some small amount of overlap with its neighbors. If this number
+is too small (or Nmax is too large), sharp features can evolve from
+higher to lower resolution regions before the simulation has a chance
+to recalculate the grid spacing. Defaults to 40; must be at least 16.</li>
+<li><strong>Nmax</strong> (<em>int, optional</em>) &#8211; The log base 2 of the ratio between the time steps in the lowest and
+highest resolution regions. Defaults to 7.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.simulation.setMonitorCallback">
+<tt class="descname">setMonitorCallback</tt><big>(</big><big>)</big><a class="headerlink" href="#bubble_collisions.simulation.setMonitorCallback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the object that determines the grid spacing.</p>
+<p>The object must be callable (it can either be a function or a python
+class instance). It can must have a call signature of (N, x, y) where
+<em>N</em> is the simulation time variable, <em>x</em> is an array of grid points, and
+<em>y</em> is an array of shape <tt class="docutils literal"><span class="pre">(nx,2*nfields+2)</span></tt> that contains the fields
+<span class="math">\(\phi_i\)</span>, their conjugate momenta <span class="math">\(\Pi_i\)</span>, and the metric
+functions <span class="math">\(\alpha\)</span> and <span class="math">\(a\)</span>. The return value should be an
+array of length <em>nx</em> indicating the desired density of points for a new grid.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.simulation.setTimeConstraints">
+<tt class="descname">setTimeConstraints</tt><big>(</big><em>max_run_time</em>, <em>N_last_check_time</em><big>)</big><a class="headerlink" href="#bubble_collisions.simulation.setTimeConstraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the computer time constraints for the simulation.</p>
+<p>If the simulation has been running for <em>max_run_time</em> (in seconds)
+and has not yet reached <em>N=N_last_check_time</em>, abort the simulation.
+Both values default to zero, so time constraints are not checked
+by default.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="running-the-simulation">
+<h2>Running the simulation<a class="headerlink" href="#running-the-simulation" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="bubble_collisions.simulation.runCollision">
+<tt class="descname">runCollision</tt><big>(</big><em>x</em>, <em>y</em>, <em>t0</em>, <em>tmax</em>, <em>exactTmax=True</em>, <em>growBounds=True</em>, <em>overwrite=True</em>, <em>alphaMax=1e5</em><big>)</big><a class="headerlink" href="#bubble_collisions.simulation.runCollision" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the simulation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>array</em>) &#8211; Initial grid values.</li>
+<li><strong>y</strong> (<em>array</em>) &#8211; Initial field values on the grid. Should be shape <tt class="docutils literal"><span class="pre">(nx,</span> <span class="pre">2*nfields+2)</span></tt>,
+and contain the fields <span class="math">\(\phi_i\)</span>, their conjugate momenta
+<span class="math">\(\Pi_i\)</span>, and the metric functions <span class="math">\(\alpha\)</span> and <span class="math">\(a\)</span>.</li>
+<li><strong>t0</strong> (<em>float</em>) &#8211; Time variable <em>N</em> along the initial time slice.</li>
+<li><strong>tmax</strong> (<em>float</em>) &#8211; Simulation stops when it reaches <em>tmax</em>.</li>
+<li><strong>exactTmax</strong> (<em>bool, optional</em>) &#8211; If True, the simulations stops exactly at <em>tmax</em> and the final output
+is at <em>tmax</em>. Otherwise, the final time step is determined from the
+CFL condition.</li>
+<li><strong>growBounds</strong> (<em>bool, optional</em>) &#8211; If True, expand the boundaries of the simulation to include all space
+in the future lightcone of the initial grid. If False, keep the simulation
+boundaries fixed.</li>
+<li><strong>overwrite</strong> (<em>bool, optional</em>) &#8211; If True, overwrite the output files. If False, append output.</li>
+<li><strong>alphaMax</strong> (<em>float, optional</em>) &#8211; Maximum value of the metric function <span class="math">\(\alpha\)</span> before the
+simulation aborts (large <span class="math">\(\alpha\)</span> usually indicates the end of
+inflation).</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>t_final</strong> (<em>double</em>)</li>
+<li><strong>x_out</strong> (<em>array</em>)</li>
+<li><strong>y_out</strong> (<em>array</em>)</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="reading-and-interpolation">
+<h2>Reading and interpolation<a class="headerlink" href="#reading-and-interpolation" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="bubble_collisions.simulation.readFromFile">
+<tt class="descname">readFromFile</tt><big>(</big><em>file_name</em><big>)</big><a class="headerlink" href="#bubble_collisions.simulation.readFromFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a simulation file.</p>
+<p>The input should be the name of the file.
+The output will be a list of time slices. Each slice is a tuple consisting
+of (<em>N, x, Y</em>), where <em>N</em> is the time value of the slice, <em>x</em> is an array
+of grid points along the slice, and <em>Y</em> is an array containing the fields,
+metric functions, and their derivatives along the slice:</p>
+<blockquote>
+<div>Y = [y, dy/dN, dy/dx, d^2y/dNdx]</div></blockquote>
+<p>Depending on whether a fields file or Christoffel file was loaded,
+the subarray <em>y</em> will either contain the fields, their conjugate momenta, and
+the metric functions, or the Christoffel symbols
+<span class="math">\(\Gamma_{NN}^N\)</span>,
+<span class="math">\(\Gamma_{Nx}^N\)</span>,
+<span class="math">\(\Gamma_{xx}^N\)</span>,
+<span class="math">\(\Gamma_{NN}^x\)</span>,
+<span class="math">\(\Gamma_{Nx}^x\)</span>, and
+<span class="math">\(\Gamma_{xx}^x\)</span>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.simulation.valsOnGrid">
+<tt class="descname">valsOnGrid</tt><big>(</big><em>Nvals</em>, <em>xvals</em>, <em>data</em>, <em>Ndata=None</em>, <em>cubic=True</em><big>)</big><a class="headerlink" href="#bubble_collisions.simulation.valsOnGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use interpolation to find the field/metric/christoffel values on an
+output simulation grid.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Nvals</strong> (<em>array</em>) &#8211; </li>
+<li><strong>xvals</strong> (<em>array</em>) &#8211; The values at which one wants to do the interpolation.
+<em>xvals</em> and <em>Nvals</em> must have the same shape.</li>
+<li><strong>data</strong> (<em>list</em>) &#8211; Output from <a class="reference internal" href="#bubble_collisions.simulation.readFromFile" title="bubble_collisions.simulation.readFromFile"><tt class="xref py py-func docutils literal"><span class="pre">readFromFile()</span></tt></a>.</li>
+<li><strong>Ndata</strong> (<em>array, optional</em>) &#8211; The time variable for each time slice along the simulation.
+If provided, should be equal to <tt class="docutils literal"><span class="pre">[d[0]</span> <span class="pre">for</span> <span class="pre">d</span> <span class="pre">in</span> <span class="pre">data]</span></tt>.</li>
+<li><strong>cubic</strong> (<em>bool, optional</em>) &#8211; True for cubic interpolation, False for linear interpolation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The field/metric/christoffel values and their derivatives at
+each of the input points.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">array</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">simulation</a><ul>
+<li><a class="reference internal" href="#simulation-setup">Simulation setup</a></li>
+<li><a class="reference internal" href="#running-the-simulation">Running the simulation</a></li>
+<li><a class="reference internal" href="#reading-and-interpolation">Reading and interpolation</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Overview.html"
+                        title="previous chapter">Package Overview</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="models.html"
+                        title="next chapter">models</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/simulation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="models.html" title="models"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Overview.html" title="Package Overview"
+             >previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

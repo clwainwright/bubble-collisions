@@ -1,0 +1,241 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>geodesics &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="index.html" />
+    <link rel="next" title="bubble_analytics" href="bubble_analytics.html" />
+    <link rel="prev" title="derivsAndSmoothing" href="derivsAndSmoothing.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bubble_analytics.html" title="bubble_analytics"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="derivsAndSmoothing.html" title="derivsAndSmoothing"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <div class="section" id="module-bubble_collisions.geodesics">
+<span id="geodesics"></span><h1>geodesics<a class="headerlink" href="#module-bubble_collisions.geodesics" title="Permalink to this headline">¶</a></h1>
+<p>This module provides functions for calculating geodesics on top of a
+previously run simulation, as well as functions for calculating the
+comoving curvature perturbation from the geodesic information.</p>
+<dl class="function">
+<dt id="bubble_collisions.geodesics.runSingleGeo">
+<tt class="descname">runSingleGeo</tt><big>(</big><em>xi</em>, <em>tau</em>, <em>data</em>, <em>Ndata=None</em>, <em>x0=0.0</em>, <em>cubic=True</em>, <em>integratorName='vode'</em>, <em>**intargs</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/geodesics.html#runSingleGeo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.geodesics.runSingleGeo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integrates a geodesic for a given set of simulation data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>xi</strong> (<em>float</em>) &#8211; The initial geodesic trajectory</li>
+<li><strong>tau</strong> (<em>array_like</em>) &#8211; The proper times along the geodesic at which the integration should
+be saved.</li>
+<li><strong>data</strong> (<em>list</em>) &#8211; Christoffel data output by <tt class="xref py py-func docutils literal"><span class="pre">simulation.readFromFile()</span></tt>.</li>
+<li><strong>Ndata</strong> (<em>array_like, optional</em>) &#8211; If present, equal to <tt class="docutils literal"><span class="pre">array([d[0]</span> <span class="pre">for</span> <span class="pre">d</span> <span class="pre">in</span> <span class="pre">data])</span></tt>.
+This is a slight optimization when running many geodesics.</li>
+<li><strong>x0</strong> (<em>float, optional</em>) &#8211; Initial starting placement for the geodesic.</li>
+<li><strong>cubic</strong> (<em>bool, optional</em>) &#8211; If True (default), use cubic interpolation along simulation grid.
+If False, use linear interpolation.</li>
+<li><strong>integratorName</strong> (<em>string, optional</em>) &#8211; Integrator to use with <tt class="xref py py-class docutils literal"><span class="pre">scipy.integrate.ode</span></tt>.</li>
+<li><strong>intargs</strong> &#8211; Extra arguments to pass to the integrator.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An array of shape <tt class="docutils literal"><span class="pre">(len(tau),</span> <span class="pre">4)</span></tt>, with each element corresponding to
+<tt class="docutils literal"><span class="pre">[</span> <span class="pre">N(tau),</span> <span class="pre">dN/dtau,</span> <span class="pre">x(tau),</span> <span class="pre">dx/dtau</span> <span class="pre">]</span></tt>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.geodesics.findGeodesics">
+<tt class="descname">findGeodesics</tt><big>(</big><em>xi</em>, <em>tau</em>, <em>chris_fname</em>, <em>fields_fname</em>, <em>xi0=0.0</em>, <em>cubic=True</em>, <em>integratorName='vode'</em>, <em>min_simulated_N=0.0</em>, <em>**intargs</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/geodesics.html#findGeodesics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.geodesics.findGeodesics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integrate a grid of geodesics, returning the coordinates, fields, metric
+functions, and Christoffel symbols along the grid.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>xi</strong> (<em>list</em>) &#8211; The different geodesic trajectories which should be integrated.</li>
+<li><strong>tau</strong> (<em>list</em>) &#8211; Proper times at which to save the geodesics</li>
+<li><strong>chris_fname</strong> (<em>string</em>) &#8211; File name for the christoffel symbols.</li>
+<li><strong>fields_fname</strong> (<em>string</em>) &#8211; File name for the fields and metrics functions.</li>
+<li><strong>cubic</strong> (<em>bool, optional</em>) &#8211; If True (default), use cubic interpolation along simulation grid.
+If False, use linear interpolation.</li>
+<li><strong>integratorName</strong> (<em>string, optional</em>) &#8211; Integrator to use with <tt class="xref py py-class docutils literal"><span class="pre">scipy.integrate.ode</span></tt>.</li>
+<li><strong>min_simulated_N</strong> (<em>float, optional</em>) &#8211; Raise an error if the simulation didn&#8217;t reach at least this value.
+Has no other affect.</li>
+<li><strong>intargs</strong> &#8211; Extra arguments to pass to the integrator.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A dictionary containing the coordinates, fields, metric functions, and
+Christoffel symbols. The keys <em>xi</em> and <em>tau</em> are the same as the
+input values. Each other key corresponds to a multi-dimensional array
+with the first index corresponding to <em>tau</em> and the second index
+corresponding to <em>xi</em>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.geodesics.interpGeos">
+<tt class="descname">interpGeos</tt><big>(</big><em>xiP</em>, <em>tauP</em>, <em>data</em>, <em>key</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/geodesics.html#interpGeos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.geodesics.interpGeos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does a simple interpolation along the xi-tau grid.
+Outputs the value on the grid.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.geodesics.observerMetric">
+<tt class="descname">observerMetric</tt><big>(</big><em>tau</em>, <em>X</em>, <em>Y</em>, <em>eta</em>, <em>geoData</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/geodesics.html#observerMetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.geodesics.observerMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns a dictionary containing the metric at time slice tau
+and at observer Cartesian coordinates X, Y (with Z=0) in the synchronous
+gauge, and at an observer position given by xi0 = eta
+(eta represents a boost of the simulation coordinates, with
+(cosh(eta) = gamma)).
+It also returns the field and its time (tau) derivative at the specified
+points.</p>
+<p>tau, X, Y, and eta should all be numpy arrays that are broadcastable to the
+same shape.</p>
+<p>geoData should be the dictionary of arrays output by <a class="reference internal" href="#bubble_collisions.geodesics.findGeodesics" title="bubble_collisions.geodesics.findGeodesics"><tt class="xref py py-func docutils literal"><span class="pre">findGeodesics()</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.geodesics.scaleFactor">
+<tt class="descname">scaleFactor</tt><big>(</big><em>geos0</em>, <em>tau</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/geodesics.html#scaleFactor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.geodesics.scaleFactor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the scale factor and Hubble parameter at the given proper time
+<em>tau</em> along the geodesic grid <em>geos0</em> output by <a class="reference internal" href="#bubble_collisions.geodesics.findGeodesics" title="bubble_collisions.geodesics.findGeodesics"><tt class="xref py py-func docutils literal"><span class="pre">findGeodesics()</span></tt></a> for
+an unperturbed (no collision) simulation.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.geodesics.perturbationsFromMetric">
+<tt class="descname">perturbationsFromMetric</tt><big>(</big><em>g0</em>, <em>g1</em>, <em>a</em>, <em>H</em>, <em>divideOutCurvature=True</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/geodesics.html#perturbationsFromMetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.geodesics.perturbationsFromMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the comoving cuvature perturbation R from metric information
+in synchronous gauge Cartesian coordinates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>g0</strong> (<em>dictionary</em>) &#8211; The unperturbed metric given by <a class="reference internal" href="#bubble_collisions.geodesics.observerMetric" title="bubble_collisions.geodesics.observerMetric"><tt class="xref py py-func docutils literal"><span class="pre">observerMetric()</span></tt></a>.</li>
+<li><strong>g1</strong> (<em>dictionary</em>) &#8211; The perturbed metric given by <a class="reference internal" href="#bubble_collisions.geodesics.observerMetric" title="bubble_collisions.geodesics.observerMetric"><tt class="xref py py-func docutils literal"><span class="pre">observerMetric()</span></tt></a>.</li>
+<li><strong>a</strong> (<em>float</em>) &#8211; The scale factor.</li>
+<li><strong>H</strong> (<em>float</em>) &#8211; The Hubble parameter.</li>
+<li><strong>divideOutCurvature</strong> (<em>bool, optional</em>) &#8211; If True (default), the metric is divided by the overall negative
+curvature that&#8217;s present in the unperturbed bubble.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">[D, E, H*deltaphi/phidot, R]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="derivsAndSmoothing.html"
+                        title="previous chapter">derivsAndSmoothing</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bubble_analytics.html"
+                        title="next chapter">bubble_analytics</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/geodesics.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bubble_analytics.html" title="bubble_analytics"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="derivsAndSmoothing.html" title="derivsAndSmoothing"
+             >previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

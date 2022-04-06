@@ -1,0 +1,8 @@
+*.dat
+*.npz
+*.pyc
+*.so
+build/
+
+src_docs/_*
+*.sublime-workspace

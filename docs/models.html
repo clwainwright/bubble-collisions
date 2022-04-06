@@ -1,0 +1,346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>models &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="index.html" />
+    <link rel="next" title="collisionRunner" href="collisionRunner.html" />
+    <link rel="prev" title="simulation" href="simulation.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="collisionRunner.html" title="collisionRunner"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="simulation.html" title="simulation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <div class="section" id="module-bubble_collisions.models">
+<span id="models"></span><h1>models<a class="headerlink" href="#module-bubble_collisions.models" title="Permalink to this headline">¶</a></h1>
+<p>This module contains various models (defined by their scalar potentials)
+for use in the collision simulations.</p>
+<p>All models should inherit from <a class="reference internal" href="#bubble_collisions.models.ModelObject" title="bubble_collisions.models.ModelObject"><tt class="xref py py-class docutils literal"><span class="pre">ModelObject</span></tt></a>.</p>
+<div class="section" id="creating-new-models">
+<h2>Creating new models<a class="headerlink" href="#creating-new-models" title="Permalink to this headline">¶</a></h2>
+<p>Creating a new scalar field model is a relatively straightforward procedure, and most of the coding is boilerplate. Let&#8217;s walk through the pieces needed to create the <a class="reference internal" href="#bubble_collisions.models.TestModel" title="bubble_collisions.models.TestModel"><tt class="xref py py-class docutils literal"><span class="pre">TestModel</span></tt></a> class.</p>
+<p>First, we need to create a new structure to hold instances of the model. In the rare case where the model has no parameters, this can step can be skipped and instead one can just use the <tt class="docutils literal"><span class="pre">ModelObject</span></tt> structure. In all other cases, we&#8217;ll need to define a basic structure with some parameters:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
+    <span class="n">ModelObject</span> <span class="n">base</span><span class="p">;</span>
+    <span class="kt">double</span> <span class="n">m1_sq</span><span class="p">;</span>
+    <span class="kt">double</span> <span class="n">m2_sq</span><span class="p">;</span>
+    <span class="kt">double</span> <span class="n">m12_sq</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">TestModelObject</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Here, the various <em>m</em>-parameters represent mass-squared values that go into a 2-field quadratic potential.</p>
+<p>Next, we need to define the potential:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="k">static</span> <span class="kt">int</span> <span class="nf">test_model_V</span><span class="p">(</span>
+    <span class="n">TestModelObject</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span>
+    <span class="n">npy_intp</span> <span class="n">numpts</span><span class="p">,</span> <span class="n">npy_intp</span> <span class="n">ny</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">y_in</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">y_out</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">npy_intp</span> <span class="n">i</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">numpts</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">double</span> <span class="n">phi1</span> <span class="o">=</span> <span class="n">y_in</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">ny</span><span class="p">];</span>
+        <span class="kt">double</span> <span class="n">phi2</span> <span class="o">=</span> <span class="n">y_in</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span>
+        <span class="n">y_out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">self</span><span class="o">-&gt;</span><span class="n">m1_sq</span> <span class="o">*</span> <span class="n">phi1</span><span class="o">*</span><span class="n">phi1</span>
+            <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">self</span><span class="o">-&gt;</span><span class="n">m2_sq</span> <span class="o">*</span> <span class="n">phi2</span><span class="o">*</span><span class="n">phi2</span>
+            <span class="o">+</span> <span class="n">self</span><span class="o">-&gt;</span><span class="n">m12_sq</span> <span class="o">*</span> <span class="n">phi1</span><span class="o">*</span><span class="n">phi2</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The call signature should be exactly the same for all different models, except that each model should use a pointer to its own model structure. This data at this pointer will contain all of the parameters that we need in the potential. The input <em>y_in</em> is going to be an array of <em>num_pts</em> points, each with dimension <em>ny</em>. This will generally be larger than the total number of field dimensions <em>nfield</em>. The output <em>y_out</em> will be pre-allocated to an array of size <em>numpts</em>. The job of this function is to fill in each output point.
+The inner for loop iterates over all the points, retrieving the field values from <em>y_in</em> and storing the result in <em>y_out</em>. When finished, the function returns 0 for success or -1 if there was an error (in which case an error message should probably be set using <tt class="docutils literal"><span class="pre">PyErr_SetString()</span></tt>).</p>
+<p>The potential gradient has a very similar structure, but now the output array has length <tt class="docutils literal"><span class="pre">numpts*nfields</span> <span class="pre">=</span> <span class="pre">numpts*2</span></tt>, and the output points must be filled appropriately:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="k">static</span> <span class="kt">int</span> <span class="nf">test_model_dV</span><span class="p">(</span>
+    <span class="n">TestModelObject</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span>
+    <span class="n">npy_intp</span> <span class="n">numpts</span><span class="p">,</span> <span class="n">npy_intp</span> <span class="n">ny</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">y_in</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">y_out</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">npy_intp</span> <span class="n">i</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">numpts</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">double</span> <span class="n">phi1</span> <span class="o">=</span> <span class="n">y_in</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">ny</span><span class="p">];</span>
+        <span class="kt">double</span> <span class="n">phi2</span> <span class="o">=</span> <span class="n">y_in</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span>
+        <span class="n">y_out</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">self</span><span class="o">-&gt;</span><span class="n">m1_sq</span> <span class="o">*</span> <span class="n">phi1</span> <span class="o">+</span>  <span class="n">self</span><span class="o">-&gt;</span><span class="n">m12_sq</span> <span class="o">*</span> <span class="n">phi2</span><span class="p">;</span>
+        <span class="n">y_out</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">self</span><span class="o">-&gt;</span><span class="n">m2_sq</span> <span class="o">*</span> <span class="n">phi2</span> <span class="o">+</span>  <span class="n">self</span><span class="o">-&gt;</span><span class="n">m12_sq</span> <span class="o">*</span> <span class="n">phi1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Next, we need to create an initialization function. For a simple model it&#8217;s pretty straightforward.</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="k">static</span> <span class="kt">int</span> <span class="nf">test_model_init</span><span class="p">(</span><span class="n">TestModelObject</span><span class="o">*</span> <span class="n">self</span><span class="p">,</span> <span class="n">PyObject</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">PyObject</span> <span class="o">*</span><span class="n">keywds</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">static</span> <span class="kt">char</span> <span class="o">*</span><span class="n">kwlist</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;m1_sq&quot;</span><span class="p">,</span><span class="s">&quot;m2_sq&quot;</span><span class="p">,</span><span class="s">&quot;m12_sq&quot;</span><span class="p">,</span><span class="nb">NULL</span><span class="p">};</span>
+    <span class="kt">int</span> <span class="n">success</span> <span class="o">=</span> <span class="n">PyArg_ParseTupleAndKeywords</span><span class="p">(</span>
+        <span class="n">args</span><span class="p">,</span> <span class="n">keywds</span><span class="p">,</span> <span class="s">&quot;ddd&quot;</span><span class="p">,</span> <span class="n">kwlist</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">self</span><span class="o">-&gt;</span><span class="n">m1_sq</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">self</span><span class="o">-&gt;</span><span class="n">m2_sq</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">self</span><span class="o">-&gt;</span><span class="n">m12_sq</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">success</span><span class="p">)</span> <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+    <span class="n">self</span><span class="o">-&gt;</span><span class="n">base</span><span class="p">.</span><span class="n">V</span> <span class="o">=</span> <span class="p">(</span><span class="n">ScalarFunc</span><span class="p">)</span><span class="n">test_model_V</span><span class="p">;</span>
+    <span class="n">self</span><span class="o">-&gt;</span><span class="n">base</span><span class="p">.</span><span class="n">dV</span> <span class="o">=</span> <span class="p">(</span><span class="n">ScalarFunc</span><span class="p">)</span><span class="n">test_model_dV</span><span class="p">;</span>
+    <span class="n">self</span><span class="o">-&gt;</span><span class="n">base</span><span class="p">.</span><span class="n">nfields</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>All models with parameters will need to set them here. See the Python docs on <a class="reference external" href="https://docs.python.org/2/c-api/arg.html">parsing arguments</a> for more info on how to do this. Then, all models will need to link to their potential and derivative functions and specify how many fields they contain. Again, return 0 for success.</p>
+<p>We now have all of the functions set up for the model, but we still need to create a model type so that Python will know that the model exists. To do this, we create a <em>PyTypeObject</em> and a function which will initialize it:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="k">static</span> <span class="n">PyTypeObject</span> <span class="n">test_model_type</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">PyObject_HEAD_INIT</span><span class="p">(</span><span class="nb">NULL</span><span class="p">)</span>
+<span class="p">};</span>
+
+<span class="k">static</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">test_model_docstring</span> <span class="o">=</span>
+<span class="s">&quot;TestModel(m1_sq, m2_sq, m3_sq)</span><span class="se">\n</span><span class="s">&quot;</span>
+<span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+<span class="s">&quot;A test model using a quadratic potential and two scalar fields.</span><span class="se">\n</span><span class="s">&quot;</span>
+<span class="s">&quot;Not to be used for any sort of bubble collisions.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+
+<span class="kt">int</span> <span class="nf">init_test_model_type</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">test_model_type</span><span class="p">.</span><span class="n">tp_base</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">model_object_type</span><span class="p">;</span>
+    <span class="n">test_model_type</span><span class="p">.</span><span class="n">tp_basicsize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">TestModelObject</span><span class="p">);</span>
+    <span class="n">test_model_type</span><span class="p">.</span><span class="n">tp_flags</span> <span class="o">=</span> <span class="n">Py_TPFLAGS_DEFAULT</span> <span class="o">|</span> <span class="n">Py_TPFLAGS_BASETYPE</span><span class="p">;</span>
+    <span class="n">test_model_type</span><span class="p">.</span><span class="n">tp_name</span> <span class="o">=</span> <span class="s">&quot;models.TestModel&quot;</span><span class="p">;</span>
+    <span class="n">test_model_type</span><span class="p">.</span><span class="n">tp_doc</span> <span class="o">=</span> <span class="n">test_model_docstring</span><span class="p">;</span>
+    <span class="n">test_model_type</span><span class="p">.</span><span class="n">tp_init</span> <span class="o">=</span> <span class="p">(</span><span class="n">initproc</span><span class="p">)</span><span class="n">test_model_init</span><span class="p">;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">PyType_Ready</span><span class="p">(</span><span class="o">&amp;</span><span class="n">test_model_type</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+    <span class="n">Py_INCREF</span><span class="p">(</span><span class="o">&amp;</span><span class="n">test_model_type</span><span class="p">);</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This is all essentially boilerplate and can be directly copied for other models, except for changes in variable names (and docstring). Additional properties can also be set here, such as additional class methods.</p>
+<p>Finally, we need to add the new type in the models module initialization function:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="n">PyMODINIT_FUNC</span> <span class="nf">initmodels</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+
+    <span class="k">if</span><span class="p">(</span><span class="n">init_test_model_type</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">PyModule_AddObject</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="s">&quot;TestModel&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">test_model_type</span><span class="p">);</span>
+
+    <span class="c1">// ...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>And that should be it! Lots more information found in the Python docs: <a class="reference external" href="https://docs.python.org/2/extending/newtypes.html">defining new types</a>.</p>
+</div>
+<div class="section" id="base-model">
+<h2>Base Model<a class="headerlink" href="#base-model" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="bubble_collisions.models.ModelObject">
+<em class="property">class </em><tt class="descname">ModelObject</tt><a class="headerlink" href="#bubble_collisions.models.ModelObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>The base class for model objects. Defines the python interface to the
+potential functions and defines the structure which can be passed to other
+C functions.</p>
+<dl class="method">
+<dt id="bubble_collisions.models.ModelObject.V">
+<tt class="descname">V</tt><big>(</big><em>phi</em>, <em>one_dim=False</em><big>)</big><a class="headerlink" href="#bubble_collisions.models.ModelObject.V" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the potential as a function of the scalar field <em>phi</em>.</p>
+<p>If <em>one_dim</em> is False, then the final axis of <em>phi</em> should separate the
+different field components and it should be at least <em>self.nfields</em> long. The
+output array will have shape <tt class="docutils literal"><span class="pre">in_shape[:-1]</span></tt>.</p>
+<p>If <em>one_dim</em> is True, then all input values are treated directly as field
+values and the output array will have the same shape as the input array
+(can be a single scalar).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bubble_collisions.models.ModelObject.check_model_object">
+<tt class="descname">check_model_object</tt><big>(</big><big>)</big><a class="headerlink" href="#bubble_collisions.models.ModelObject.check_model_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bubble_collisions.models.ModelObject.dV">
+<tt class="descname">dV</tt><big>(</big><em>phi</em>, <em>one_dim=False</em><big>)</big><a class="headerlink" href="#bubble_collisions.models.ModelObject.dV" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the derivative of the potential as a function of the scalar field <em>phi</em>.</p>
+<p>If <em>one_dim</em> is False, then the final axis of <em>phi</em> should separate the
+different field components and it should be at least <em>self.nfields</em> long. The
+output array will have shape <tt class="docutils literal"><span class="pre">in_shape[:-1]+(nfields,)</span></tt>.</p>
+<p>If <em>one_dim</em> is True, then all input values are treated directly as field
+values and the output array will have the same shape as the input array
+(can be a single scalar).</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="inflationary-models">
+<h2>Inflationary Models<a class="headerlink" href="#inflationary-models" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="bubble_collisions.models.GenericPiecewise_NoHilltop_Model">
+<em class="property">class </em><tt class="descname">GenericPiecewise_NoHilltop_Model</tt><a class="headerlink" href="#bubble_collisions.models.GenericPiecewise_NoHilltop_Model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">models.ModelObject</span></tt></p>
+<p>A piecewise potential with a quartic barrier and a quadratic slow-roll phase.
+This is the same potential used in <a class="reference external" href="http://arxiv.org/abs/arXiv:1407.2950">arXiv:1407.2950</a>, and the parameters are
+described in more detail there.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>omega</strong> (<em>float, optional</em>) &#8211; The ratio of field values at the top and bottom of the quartic barrier.
+Must satisfy <em>0 &lt; omega &lt; 0.5</em>.</li>
+<li><strong>mu</strong> (<em>float, optional</em>) &#8211; The difference between the metastable false-vacuum energy and the
+inflationary vacuum energy relative to the inflationary energy.
+Must satisfy <em>mu &gt; 0</em>.</li>
+<li><strong>Delta_phi</strong> (<em>float, optional</em>) &#8211; The distance in field space between the metastable minimum and the bottom
+of the quartic barrier.</li>
+<li><strong>phi0</strong> (<em>float, optional</em>) &#8211; The location of the absolute minimum.</li>
+<li><strong>posneg</strong> (<em>int, optional</em>) &#8211; Use +1 (default) when setting the parameters at positive field values, and
+-1 when setting the parameters at negative field values.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="bubble_collisions.models.GenericPiecewise_NoHilltop_Model.setParams">
+<tt class="descname">setParams</tt><big>(</big><em>omega=None</em>, <em>mu=None</em>, <em>Delta_phi=None</em>, <em>phi0=None</em>, <em>posneg=+1</em><big>)</big><a class="headerlink" href="#bubble_collisions.models.GenericPiecewise_NoHilltop_Model.setParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the model parameters individually or all at once.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="bubble_collisions.models.QuadGaussModel">
+<em class="property">class </em><tt class="descname">QuadGaussModel</tt><a class="headerlink" href="#bubble_collisions.models.QuadGaussModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">models.ModelObject</span></tt></p>
+<p>A potential characterized by a quadratic slow-roll phase and a gaussian
+bump which creates a barrier and a metastable phase.
+This is the same potential used in <a class="reference external" href="http://arxiv.org/abs/arXiv:1407.2950">arXiv:1407.2950</a>, and the parameters are
+described in more detail there.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>bump_height</strong> (<em>float</em>) &#8211; The height of the bump relative to the slope of the quadratic potential.
+Can be either positive or negative (for a dip instead of a bump), but must
+satisfy <tt class="docutils literal"><span class="pre">|bump_height|</span> <span class="pre">&gt;</span> <span class="pre">1</span></tt>.</li>
+<li><strong>bump_width</strong> (<em>float</em>) &#8211; The width (standard deviation) of the gaussian bump.</li>
+<li><strong>phi0</strong> (<em>float</em>) &#8211; The location of the inflationary minimum.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="bubble_collisions.models.TestModel">
+<em class="property">class </em><tt class="descname">TestModel</tt><a class="headerlink" href="#bubble_collisions.models.TestModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">models.ModelObject</span></tt></p>
+<p>TestModel(m1_sq, m2_sq, m3_sq)</p>
+<p>A test model using a quadratic potential and two scalar fields.
+Not to be used for any sort of bubble collisions.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">models</a><ul>
+<li><a class="reference internal" href="#creating-new-models">Creating new models</a></li>
+<li><a class="reference internal" href="#base-model">Base Model</a></li>
+<li><a class="reference internal" href="#inflationary-models">Inflationary Models</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="simulation.html"
+                        title="previous chapter">simulation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="collisionRunner.html"
+                        title="next chapter">collisionRunner</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/models.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="collisionRunner.html" title="collisionRunner"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="simulation.html" title="simulation"
+             >previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>collisionRunner &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="index.html" />
+    <link rel="next" title="derivsAndSmoothing" href="derivsAndSmoothing.html" />
+    <link rel="prev" title="models" href="models.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="derivsAndSmoothing.html" title="derivsAndSmoothing"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="models.html" title="models"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <div class="section" id="module-bubble_collisions.collisionRunner">
+<span id="collisionrunner"></span><h1>collisionRunner<a class="headerlink" href="#module-bubble_collisions.collisionRunner" title="Permalink to this headline">¶</a></h1>
+<p>This module provides a set of convenience functions to set up and run a
+simulation.</p>
+<p>The easiest way to run a simulation is to use <a class="reference internal" href="#bubble_collisions.collisionRunner.runModelFromInstanton" title="bubble_collisions.collisionRunner.runModelFromInstanton"><tt class="xref py py-func docutils literal"><span class="pre">runModelFromInstanton()</span></tt></a>.
+The necessary input will be the scalar field model,
+the initial instantons for each bubble (as calculated using
+<tt class="xref py py-func docutils literal"><span class="pre">cosmoTransitions.pathDeformation.fullTunneling()</span></tt>),
+the field value of the false vacuum, and the kinematic separation between the
+bubbles. Additionally, the user will need to set the monitor function prior
+to running the simulation.
+All of the rest can be handled by the default arguments.</p>
+<dl class="function">
+<dt id="bubble_collisions.collisionRunner.timeSlicesForShockParams">
+<tt class="descname">timeSlicesForShockParams</tt><big>(</big><em>xsep</em>, <em>obs_inst_radius</em>, <em>col_wall_inner</em>, <em>col_wall_outer</em>, <em>tmax</em>, <em>minstep=0.0005</em>, <em>stepsPerShock=20</em>, <em>no_collision_step=0.1</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/collisionRunner.html#timeSlicesForShockParams"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.collisionRunner.timeSlicesForShockParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Outputs a list of time slices at which to save the simulation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>xsep</strong> &#8211; Separation between bubbles, or zero for single bubble</li>
+<li><strong>obs_inst_radius</strong> &#8211; Radius of the observer bubble at N = 0</li>
+<li><strong>col_wall_inner</strong> &#8211; Initial inner radius of the collision instanton</li>
+<li><strong>col_wall_outer</strong> &#8211; Initial outer radius of the collision instanton</li>
+<li><strong>tmax</strong> &#8211; Maximum allowed time output</li>
+<li><strong>minstep</strong> &#8211; Smallest allowed time step</li>
+<li><strong>stepsPerShock</strong> &#8211; Number of times to save during a single geodesic crossing of the shock</li>
+<li><strong>no_collision_step</strong> &#8211; The output time step will be no bigger than
+<tt class="docutils literal"><span class="pre">obs_radius(N)</span> <span class="pre">*</span> <span class="pre">no_collision_step</span></tt>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.collisionRunner.wallPositionFromInstanton">
+<tt class="descname">wallPositionFromInstanton</tt><big>(</big><em>r</em>, <em>phi</em>, <em>cutoff=0.05</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/collisionRunner.html#wallPositionFromInstanton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.collisionRunner.wallPositionFromInstanton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the inner and outer positions of the bubble wall.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>r</strong> (<em>array of shape (nx,)</em>) &#8211; </li>
+<li><strong>phi</strong> (<em>array of shape (nx, nfields)</em>) &#8211; </li>
+<li><strong>cutoff</strong> (<em>float, optional</em>) &#8211; Defines the edge of the bubble wall. For example, if <tt class="docutils literal"><span class="pre">cutoff=0.05</span></tt>
+(the default), then outer edge of the bubble wall is defined as the
+radius that contains 95% of the field values between the bubble&#8217;s
+center and r = infinity.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.collisionRunner.makeTwoSidedInstanton_withFill">
+<tt class="descname">makeTwoSidedInstanton_withFill</tt><big>(</big><em>r</em>, <em>phi</em>, <em>phiF</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/collisionRunner.html#makeTwoSidedInstanton_withFill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.collisionRunner.makeTwoSidedInstanton_withFill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes as input the bubble wall for a single instanton, and outputs
+an instanton going from -rmax to rmax. It fills in the center smoothly,
+and adjusts the vertical scale (slightly) so that <em>phi(rmax) = phiF</em>
+exactly.</p>
+<p>This function is no longer necessary with the new version of
+CosmoTransitions, since the new version already outputs an instanton that
+goes all the way down to r=0.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>r</strong> (<em>array of shape (nx,)</em>) &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.collisionRunner.makeTwoSidedInstanton">
+<tt class="descname">makeTwoSidedInstanton</tt><big>(</big><em>inst</em>, <em>phiF</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/collisionRunner.html#makeTwoSidedInstanton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.collisionRunner.makeTwoSidedInstanton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes as input the bubble wall for a single instanton, and outputs
+an instanton going from -rmax to rmax. It adjusts the vertical scale
+(slightly) so that <em>phi(rmax) = phiF</em> exactly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>inst</strong> (<em>dictionary</em>) &#8211; Contains arrays for keys &#8216;r&#8217; (length nx), &#8216;phi&#8217; (shape (nx, nfields)),
+and &#8216;dphi&#8217; (shape (nx, nfields)).</li>
+<li><strong>phiF</strong> (<em>array of length nfields</em>) &#8211; Field value at the false vacuum</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.collisionRunner.calcInitialDataFromInst">
+<tt class="descname">calcInitialDataFromInst</tt><big>(</big><em>model</em>, <em>inst1</em>, <em>inst2</em>, <em>phiF</em>, <em>xsep</em>, <em>rel_t0=0.001</em>, <em>tail_extension=0.1</em>, <em>xmin=None</em>, <em>xmax=None</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/collisionRunner.html#calcInitialDataFromInst"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.collisionRunner.calcInitialDataFromInst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate initial conditions for the simulation starting from instantons.</p>
+<p>This function works by making two-sided instantons, fitting splines to the
+instantons, then intepolating along the spline and summing the two
+instantons together.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>model</strong> (<em>ModelObject</em>) &#8211; The model to be used in the simulation. Should have functions <em>V</em> and
+<em>dV</em>.</li>
+<li><strong>inst1</strong> (<em>instanton object</em>) &#8211; The observer instanton centered at <em>x=0</em>.
+Should be a dictionary-like object with keys &#8216;r&#8217;, &#8216;phi&#8217;, and &#8216;dphi&#8217;,
+where the &#8216;r&#8217; array has length <em>nx</em> and the phi and dphi arrays have
+shape <em>(nx, nfields)</em>.</li>
+<li><strong>inst2</strong> (<em>instanton object</em>) &#8211; The collision instanton centered at <em>x=xsep</em>.</li>
+<li><strong>phiF</strong> (array of length <em>nfields</em>) &#8211; The false-vacuum field value.</li>
+<li><strong>xsep</strong> (<em>float</em>) &#8211; </li>
+<li><strong>rel_t0</strong> (<em>float, optional</em>) &#8211; Initial time variable relative to the size of the observer instanton.</li>
+<li><strong>tail_extension</strong> (<em>float, optional</em>) &#8211; How far to extend the simulation boundaries beyond the instanton
+end-points (only used if xmin and xmax are not set)</li>
+<li><strong>xmin</strong> (<em>float, optional</em>) &#8211; The left boundary of the simulation. Useful for when not growing the
+bounds of the simulation.</li>
+<li><strong>xmax</strong> (<em>float, optional</em>) &#8211; The right boundary of the simulation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>t0</strong> (<em>float</em>) &#8211;
+The initial time value.</li>
+<li><strong>x</strong> (<em>array of length nx</em>) &#8211;
+The initial grid.</li>
+<li><strong>Y</strong> (array of shape <tt class="docutils literal"><span class="pre">(nx,</span> <span class="pre">2*nfields+2)</span></tt>) &#8211;
+The initial field values <span class="math">\(\phi\)</span>, their rescaled momenta
+<span class="math">\(\Pi\)</span>, and the initial metric functions <span class="math">\(\alpha\)</span> and
+<span class="math">\(a\)</span>.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="bubble_collisions.collisionRunner.monitorFunc1D">
+<em class="property">class </em><tt class="descname">monitorFunc1D</tt><big>(</big><em>pnts_per_wall</em>, <em>min_density</em>, <em>num_walls</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/collisionRunner.html#monitorFunc1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.collisionRunner.monitorFunc1D" title="Permalink to this definition">¶</a></dt>
+<dd><p>A simple monitor function for use with single-field potentials.</p>
+<p>The calculated grid density is <span class="math">\(m(x) \propto d\Pi/dx\)</span>,
+with the proportionaly such that there are the specified number
+of points per bubble wall.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.collisionRunner.runModelFromInstanton">
+<tt class="descname">runModelFromInstanton</tt><big>(</big><em>model</em>, <em>inst1</em>, <em>inst2</em>, <em>phiF</em>, <em>xsep=1.0</em>, <em>t0_rel=0.001</em>, <em>tfix=7.0</em>, <em>tmax=50.0</em>, <em>truncation=0.95</em>, <em>time_slice_params={}</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/collisionRunner.html#runModelFromInstanton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.collisionRunner.runModelFromInstanton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the simulation for the given model and instanton data.</p>
+<p>The recorded time step is not constant, but varies such that there are
+more steps where the shock is briefest and the geodesic goes through
+it most quickly.</p>
+<p>The user must still set the simulation&#8217;s monitor function, file parameters
+(other than <em>tout</em>), and integration parameters (or leave them at their
+default values).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>model</strong> (<em>ModelObject</em>) &#8211; The model to be used in the simulation. Should have functions <em>V</em> and
+<em>dV</em>.</li>
+<li><strong>inst1</strong> (<em>instanton object</em>) &#8211; The observer instanton centered at <em>x=0</em>.
+Should be a dictionary-like object with keys &#8216;r&#8217;, &#8216;phi&#8217;, and &#8216;dphi&#8217;,
+where the &#8216;r&#8217; array has length <em>nx</em> and the phi and dphi arrays have
+shape <em>(nx, nfields)</em>.</li>
+<li><strong>inst2</strong> (<em>instanton object</em>) &#8211; The collision instanton centered at <em>x=xsep</em>.</li>
+<li><strong>phiF</strong> (array of length <em>nfields</em>) &#8211; The false-vacuum field value.</li>
+<li><strong>xsep</strong> (<em>float, optional</em>) &#8211; </li>
+<li><strong>t0_rel</strong> (<em>float, optional</em>) &#8211; Initial time variable relative to the size of the observer instanton.</li>
+<li><strong>tfix</strong> (<em>float, optional</em>) &#8211; Stop the simulation once it reaches <em>tfix</em> and fix the boundaries
+to exclude the bubble walls.</li>
+<li><strong>tmax</strong> (<em>float, optional</em>) &#8211; Final stopping point for the simulation after <em>tfix</em>.</li>
+<li><strong>truncation</strong> (<em>float, optional</em>) &#8211; Amount of the simulation to include inside of the bubble walls.</li>
+<li><strong>time_slice_params</strong> (<em>dictionary, optional</em>) &#8211; Optional parameters to pass to <a class="reference internal" href="#bubble_collisions.collisionRunner.timeSlicesForShockParams" title="bubble_collisions.collisionRunner.timeSlicesForShockParams"><tt class="xref py py-func docutils literal"><span class="pre">timeSlicesForShockParams()</span></tt></a>.
+To get uniform time outputs, set <tt class="docutils literal"><span class="pre">no_collision_step</span> <span class="pre">=</span> <span class="pre">0.0</span></tt> and
+<em>minstep</em> to the desired output time step.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>t</strong> (<em>float</em>)</li>
+<li><strong>x</strong> (<em>array</em>) &#8211;
+Final simulation grid</li>
+<li><strong>y</strong> (<em>array</em>) &#8211;
+Field values along the final time slice</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bubble_collisions.collisionRunner.runModelFromInstanton_fixedgrid">
+<tt class="descname">runModelFromInstanton_fixedgrid</tt><big>(</big><em>model</em>, <em>inst1</em>, <em>inst2</em>, <em>phiF</em>, <em>xsep=1.0</em>, <em>xdensity=100.0</em>, <em>t0_rel=0.001</em>, <em>tmax=5.0</em><big>)</big><a class="reference internal" href="_modules/bubble_collisions/collisionRunner.html#runModelFromInstanton_fixedgrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bubble_collisions.collisionRunner.runModelFromInstanton_fixedgrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the simulation on a constant grid. The monitor function gets computed
+automatically.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>model</strong> (<em>ModelObject</em>) &#8211; The model to be used in the simulation. Should have functions <em>V</em> and
+<em>dV</em>.</li>
+<li><strong>inst1</strong> (<em>instanton object</em>) &#8211; The observer instanton centered at <em>x=0</em>.
+Should be a dictionary-like object with keys &#8216;r&#8217;, &#8216;phi&#8217;, and &#8216;dphi&#8217;,
+where the &#8216;r&#8217; array has length <em>nx</em> and the phi and dphi arrays have
+shape <em>(nx, nfields)</em>.</li>
+<li><strong>inst2</strong> (<em>instanton object</em>) &#8211; The collision instanton centered at <em>x=xsep</em>.</li>
+<li><strong>phiF</strong> (array of length <em>nfields</em>) &#8211; The false-vacuum field value.</li>
+<li><strong>xsep</strong> (<em>float</em>) &#8211; </li>
+<li><strong>t0_rel</strong> (<em>float</em>) &#8211; Initial time variable relative to the size of the observer instanton.</li>
+<li><strong>xdensity</strong> (<em>float</em>) &#8211; Density of grid points.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>t</strong> (<em>float</em>)</li>
+<li><strong>x</strong> (<em>array</em>) &#8211;
+Final simulation grid</li>
+<li><strong>y</strong> (<em>array</em>) &#8211;
+Field values along the final time slice</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="models.html"
+                        title="previous chapter">models</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="derivsAndSmoothing.html"
+                        title="next chapter">derivsAndSmoothing</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/collisionRunner.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="derivsAndSmoothing.html" title="derivsAndSmoothing"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="models.html" title="models"
+             >previous</a> |</li>
+        <li><a href="index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>bubble_collisions.full_sky &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <h1>Source code for bubble_collisions.full_sky</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides a way to calculate the comoving curvature perturbation</span>
+<span class="sd">for full-sky bubbles. Actually, it works equally well for less than</span>
+<span class="sd">full-sky bubbles.</span>
+
+<span class="sd">The basic idea is to work directly in the comoving gauge by first defining</span>
+<span class="sd">a comoving slice, which is equivalent to a surface of constant field.</span>
+<span class="sd">Of course, this will only work when there is only one field dimension,</span>
+<span class="sd">otherwise there&#39;s not guaranteed to be any constant field surface.</span>
+<span class="sd">The basic strategy could easily be adapted to a constant energy or</span>
+<span class="sd">density surface for the case of multiple fields.</span>
+<span class="sd">The metric is then calculated along the slice, and, through a judicious choice</span>
+<span class="sd">of coordinates, made to match the anisotropic hyperbolic coordinates plus</span>
+<span class="sd">a perturbation. The metric perturbation determines the Ricci three-scalar,</span>
+<span class="sd">which can then be integrated to calculate the co-moving curvature perturbation.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">optimize</span><span class="p">,</span> <span class="n">integrate</span><span class="p">,</span> <span class="n">interpolate</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">bubble_collisions</span> <span class="kn">import</span> <span class="n">simulation</span>
+<span class="kn">from</span> <span class="nn">bubble_collisions.derivsAndSmoothing</span> <span class="kn">import</span> <span class="n">deriv14</span><span class="p">,</span> <span class="n">deriv23</span>
+
+
+<div class="viewcode-block" id="FullSkyPerturbation"><a class="viewcode-back" href="../../full_sky.html#bubble_collisions.full_sky.FullSkyPerturbation">[docs]</a><span class="k">class</span> <span class="nc">FullSkyPerturbation</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An object-oriented wrapper for the full-sky calculation.</span>
+
+<span class="sd">    There are three steps to the full-sky calculation:</span>
+
+<span class="sd">    1. Calculate the (constant field) spatial slice.</span>
+<span class="sd">    2. Determine the proper distance along the slice.</span>
+<span class="sd">    3. Convert coordinates to the observer frame and calculate the</span>
+<span class="sd">       perturbation.</span>
+
+<span class="sd">    Because items 1 and 2 are the same for all observers, it makes sense to</span>
+<span class="sd">    wrap the whole computation in a single object-oriented class. That way,</span>
+<span class="sd">    the results from parts 1 and 2 can easily be reused (and examined) for</span>
+<span class="sd">    different observers.</span>
+
+<span class="sd">    If one wishes to use something other than a constant field value to define</span>
+<span class="sd">    the spatial slice, one could just create a subclass and override</span>
+<span class="sd">    :meth:`calcSpatialSlice`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : string or data tuple</span>
+<span class="sd">        If a string, it should be the name of a simulation (fields) output</span>
+<span class="sd">        file. If a tuple, it should be the data returned from </span>
+<span class="sd">        :func:`bubble_collisions.simulation.valsOnGrid`.</span>
+<span class="sd">    phi0 : float, optional</span>
+<span class="sd">        The field value defining the constant phi surface.</span>
+<span class="sd">    nx : int, optional</span>
+<span class="sd">        Approximate number of points to use on the spatial slice.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">phi0</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">nx</span><span class="o">=</span><span class="mi">2000</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phi0</span> <span class="o">=</span> <span class="n">phi0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">nx</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FullSkyPerturbation.setup"><a class="viewcode-back" href="../../full_sky.html#bubble_collisions.full_sky.FullSkyPerturbation.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">nx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets up the calculation (steps 1 and 2 above).</span>
+<span class="sd">        Calculates the spatial slice and integrates distance along the slice.</span>
+
+<span class="sd">        This is kept as a separate function from ``__init__`` so that it</span>
+<span class="sd">        doesn&#39;t need to be rewritten for potential subclasses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Get the data --</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">readFromFile</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="n">Ndata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ndata</span> <span class="o">=</span> <span class="n">data</span><span class="p">,</span> <span class="n">Ndata</span>
+        <span class="c"># Calculate N(x) --</span>
+        <span class="n">xmin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">xmax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span><span class="n">xmax</span><span class="p">,</span><span class="n">nx</span><span class="p">)</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">N</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%i</span><span class="s"> &quot;</span><span class="o">%</span><span class="n">i</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calcSpatialSlice</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">N</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">N_spline</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">UnivariateSpline</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c"># Calculate distance along the slice --</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">valsOnGrid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ndata</span><span class="p">)</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c"># usually called the metric function &#39;a&#39;</span>
+      <span class="c">#  dNdx = self.N_spline(self.x, 1)</span>
+        <span class="n">dNdx</span> <span class="o">=</span> <span class="n">deriv14</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+            <span class="c"># I trust my own derivatives better. Spline is non-local.</span>
+        <span class="n">dudx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">beta</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cosh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="p">(</span><span class="n">alpha</span><span class="o">*</span><span class="n">dNdx</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dudx_spline</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">UnivariateSpline</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">dudx</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_spline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dudx_spline</span><span class="o">.</span><span class="n">antiderivative</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="FullSkyPerturbation.calcSpatialSlice"><a class="viewcode-back" href="../../full_sky.html#bubble_collisions.full_sky.FullSkyPerturbation.calcSpatialSlice">[docs]</a>    <span class="k">def</span> <span class="nf">calcSpatialSlice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the time N along the spatial slice at x=x0.</span>
+
+<span class="sd">        Can be overridden by subclasses for different slicings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">deltaphiForN</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+            <span class="n">phi</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">valsOnGrid</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ndata</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">phi</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi0</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">deltaphiForN</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">deltaphiForN</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Ndata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">return</span> <span class="n">optimize</span><span class="o">.</span><span class="n">brentq</span><span class="p">(</span><span class="n">deltaphiForN</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ndata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="FullSkyPerturbation.perturbationCenteredAt"><a class="viewcode-back" href="../../full_sky.html#bubble_collisions.full_sky.FullSkyPerturbation.perturbationCenteredAt">[docs]</a>    <span class="k">def</span> <span class="nf">perturbationCenteredAt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">delta_xi</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">full_output</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the comoving curvature perturbation as a function of xi</span>
+<span class="sd">        for an observer centered at x=x0. Note that a single spatial location</span>
+<span class="sd">        along the slice will map to different values of xi (in the perturbed</span>
+<span class="sd">        case) for different observers.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x0 : float</span>
+<span class="sd">            Location of the observer along the slice in simulation coordinates.</span>
+<span class="sd">        delta_xi : float, optional</span>
+<span class="sd">            Spacing between sequential output points.</span>
+<span class="sd">        full_output : bool</span>
+<span class="sd">            If True, output xi0.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        xi0 : float, optional</span>
+<span class="sd">            The position of the observer in anisotropic hyperbolic coords.</span>
+<span class="sd">        xi : array</span>
+<span class="sd">            The spatial anisotropic hyperbolic coordinate along the slice.</span>
+<span class="sd">        R : array</span>
+<span class="sd">            The comoving curvature perturbation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">N0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_spline</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span>
+        <span class="n">u0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_spline</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span>
+        <span class="n">dNdu0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_spline</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dudx_spline</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span>
+        <span class="n">xi0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsinh</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cosh</span><span class="p">(</span><span class="n">N0</span><span class="p">)</span><span class="o">*</span><span class="n">dNdu0</span><span class="p">)</span>
+        <span class="n">a0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sinh</span><span class="p">(</span><span class="n">N0</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">cosh</span><span class="p">(</span><span class="n">xi0</span><span class="p">)</span> <span class="c"># scale factor</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_spline</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span><span class="o">-</span><span class="n">u0</span><span class="p">)</span><span class="o">/</span><span class="n">a0</span> <span class="o">+</span> <span class="n">xi0</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sinh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">a0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cosh</span><span class="p">(</span><span class="n">xi</span><span class="p">)))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">dB</span> <span class="o">=</span> <span class="n">deriv14</span><span class="p">(</span><span class="n">B</span><span class="p">,</span><span class="n">xi</span><span class="p">)</span>
+        <span class="n">d2B</span> <span class="o">=</span> <span class="n">deriv23</span><span class="p">(</span><span class="n">B</span><span class="p">,</span><span class="n">xi</span><span class="p">)</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cosh</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sinh</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span>
+        <span class="n">Ricci</span> <span class="o">=</span> <span class="p">(</span> <span class="o">-</span><span class="mi">16</span><span class="o">*</span><span class="n">B</span><span class="o">**</span><span class="mi">4</span><span class="o">*</span><span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">16</span><span class="o">*</span><span class="n">B</span><span class="o">**</span><span class="mi">3</span><span class="o">*</span><span class="n">s</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">dB</span> <span class="o">+</span> <span class="mi">8</span><span class="o">*</span><span class="n">B</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="mi">8</span><span class="o">*</span><span class="n">B</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">s</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">dB</span>
+            <span class="o">-</span> <span class="mi">4</span><span class="o">*</span><span class="p">(</span><span class="n">B</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">dB</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">B</span><span class="o">*</span><span class="n">c</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">4</span><span class="o">*</span><span class="n">B</span><span class="o">*</span><span class="n">B</span> <span class="o">+</span> <span class="mi">20</span><span class="o">*</span><span class="n">B</span><span class="o">*</span><span class="n">dB</span><span class="o">*</span><span class="n">s</span><span class="o">*</span><span class="n">c</span>
+            <span class="o">-</span> <span class="mi">4</span><span class="o">*</span><span class="n">B</span><span class="o">*</span><span class="p">(</span><span class="n">c</span><span class="o">*</span><span class="n">dB</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">4</span><span class="o">*</span><span class="n">B</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">d2B</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">B</span> <span class="o">+</span> <span class="mi">6</span><span class="o">*</span><span class="n">s</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">dB</span>
+            <span class="o">+</span> <span class="p">(</span><span class="n">c</span><span class="o">*</span><span class="n">dB</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">d2B</span> <span class="p">)</span>  <span class="o">*</span>  <span class="mi">2</span><span class="o">/</span><span class="n">c</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">Ricci_interp</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">UnivariateSpline</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">Ricci</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">dPsidxi</span><span class="p">(</span><span class="n">Psi</span><span class="p">,</span> <span class="n">xi</span><span class="p">):</span>
+            <span class="n">psi</span><span class="p">,</span> <span class="n">dpsi</span> <span class="o">=</span> <span class="n">Psi</span>
+            <span class="n">d2psi</span> <span class="o">=</span> <span class="mf">0.25</span><span class="o">*</span><span class="n">Ricci_interp</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="n">dpsi</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">dpsi</span><span class="p">,</span> <span class="n">d2psi</span><span class="p">]</span>
+        <span class="n">xi_low</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">xi0</span><span class="p">,</span> <span class="n">xi</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="n">delta_xi</span><span class="p">)</span>
+        <span class="n">xi_high</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">xi0</span><span class="p">,</span> <span class="n">xi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">delta_xi</span><span class="p">)</span>
+        <span class="n">psi_low</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">odeint</span><span class="p">(</span><span class="n">dPsidxi</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span> <span class="n">xi_low</span><span class="p">)[:,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">psi_high</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">odeint</span><span class="p">(</span><span class="n">dPsidxi</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span> <span class="n">xi_high</span><span class="p">)[:,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">xi_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xi_low</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">xi_high</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="n">psi_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">psi_low</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">psi_high</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">if</span> <span class="n">full_output</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">xi0</span><span class="p">,</span> <span class="n">xi_out</span><span class="p">,</span> <span class="n">psi_out</span>
+        <span class="k">return</span> <span class="n">xi_out</span><span class="p">,</span> <span class="n">psi_out</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,477 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>bubble_collisions.geodesics &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <h1>Source code for bubble_collisions.geodesics</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides functions for calculating geodesics on top of a</span>
+<span class="sd">previously run simulation, as well as functions for calculating the </span>
+<span class="sd">comoving curvature perturbation from the geodesic information.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">integrate</span><span class="p">,</span> <span class="n">interpolate</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">sinh</span><span class="p">,</span> <span class="n">cosh</span><span class="p">,</span> <span class="n">tanh</span><span class="p">,</span> <span class="n">arctanh</span><span class="p">,</span> <span class="n">arcsinh</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+<span class="kn">from</span> <span class="nn">gc</span> <span class="kn">import</span> <span class="n">collect</span> <span class="k">as</span> <span class="n">collect_garbage</span>
+
+<span class="kn">from</span> <span class="nn">.derivsAndSmoothing</span> <span class="kn">import</span> <span class="n">deriv14</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">simulation</span>
+
+
+<span class="k">def</span> <span class="nf">_georhs_fromData</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">chris_data</span><span class="p">,</span> <span class="n">Ndata</span><span class="p">,</span><span class="n">cubic</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="n">N</span><span class="p">,</span> <span class="n">dN</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="n">Y</span>
+    <span class="n">G</span><span class="p">,</span> <span class="n">dGdN</span><span class="p">,</span> <span class="n">dGdx</span><span class="p">,</span> <span class="n">dGdNx</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">valsOnGrid</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">x</span><span class="p">,</span> <span class="n">chris_data</span><span class="p">,</span> <span class="n">Ndata</span><span class="p">,</span> <span class="n">cubic</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">dN</span><span class="p">,</span> <span class="o">-</span><span class="n">G</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">dN</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="n">G</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dx</span><span class="p">,</span>
+        <span class="n">dx</span><span class="p">,</span> <span class="o">-</span><span class="n">G</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="n">dN</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="n">G</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dx</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">_geojac_fromData</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">chris_data</span><span class="p">,</span> <span class="n">Ndata</span><span class="p">,</span><span class="n">cubic</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="n">N</span><span class="p">,</span> <span class="n">dN</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="n">Y</span>
+    <span class="n">G</span><span class="p">,</span> <span class="n">dGdN</span><span class="p">,</span> <span class="n">dGdx</span><span class="p">,</span> <span class="n">dGdNx</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">valsOnGrid</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">x</span><span class="p">,</span> <span class="n">chris_data</span><span class="p">,</span> <span class="n">Ndata</span><span class="p">,</span> <span class="n">cubic</span><span class="p">)</span>
+
+    <span class="n">jac</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+           <span class="p">[</span><span class="o">-</span><span class="n">dGdN</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">dN</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">dGdN</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="n">dGdN</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dx</span><span class="p">,</span>
+            <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="p">,</span>
+            <span class="o">-</span><span class="n">dGdx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">dN</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">dGdx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="n">dGdx</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dx</span><span class="p">,</span>
+            <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="p">],</span>
+           <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+           <span class="p">[</span><span class="o">-</span><span class="n">dGdN</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="n">dN</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">dGdN</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="n">dGdN</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dx</span><span class="p">,</span>
+            <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="p">,</span>
+            <span class="o">-</span><span class="n">dGdx</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="n">dN</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">dGdx</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="n">dGdx</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="o">*</span><span class="n">dx</span><span class="p">,</span>
+            <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">*</span><span class="n">dN</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">jac</span>
+
+
+<div class="viewcode-block" id="runSingleGeo"><a class="viewcode-back" href="../../geodesics.html#bubble_collisions.geodesics.runSingleGeo">[docs]</a><span class="k">def</span> <span class="nf">runSingleGeo</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">Ndata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">cubic</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">integratorName</span><span class="o">=</span><span class="s">&#39;vode&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">intargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Integrates a geodesic for a given set of simulation data.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    xi : float</span>
+<span class="sd">        The initial geodesic trajectory</span>
+<span class="sd">    tau : array_like</span>
+<span class="sd">        The proper times along the geodesic at which the integration should</span>
+<span class="sd">        be saved.</span>
+<span class="sd">    data : list</span>
+<span class="sd">        Christoffel data output by :func:`simulation.readFromFile`.</span>
+<span class="sd">    Ndata : array_like, optional</span>
+<span class="sd">        If present, equal to ``array([d[0] for d in data])``.</span>
+<span class="sd">        This is a slight optimization when running many geodesics.</span>
+<span class="sd">    x0 : float, optional</span>
+<span class="sd">        Initial starting placement for the geodesic.</span>
+<span class="sd">    cubic : bool, optional</span>
+<span class="sd">        If True (default), use cubic interpolation along simulation grid.</span>
+<span class="sd">        If False, use linear interpolation.</span>
+<span class="sd">    integratorName : string, optional</span>
+<span class="sd">        Integrator to use with :class:`scipy.integrate.ode`.</span>
+<span class="sd">    intargs</span>
+<span class="sd">        Extra arguments to pass to the integrator.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :</span>
+<span class="sd">        An array of shape ``(len(tau), 4)``, with each element corresponding to </span>
+<span class="sd">        ``[ N(tau), dN/dtau, x(tau), dx/dtau ]``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">Ndata</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">Ndata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">])</span>
+    <span class="n">Y0</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">cosh</span><span class="p">(</span><span class="n">xi</span><span class="p">),</span> <span class="n">x0</span><span class="p">,</span> <span class="n">sinh</span><span class="p">(</span><span class="n">xi</span><span class="p">)]</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">tau</span><span class="p">),</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">ode</span><span class="p">(</span><span class="n">_georhs_fromData</span><span class="p">,</span> <span class="n">_geojac_fromData</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">intargs</span> <span class="ow">or</span> <span class="n">integratorName</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s">&#39;vode&#39;</span><span class="p">):</span>
+        <span class="n">r</span><span class="o">.</span><span class="n">set_integrator</span><span class="p">(</span><span class="n">integratorName</span><span class="p">,</span> <span class="o">**</span><span class="n">intargs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">r</span><span class="o">.</span><span class="n">set_integrator</span><span class="p">(</span>
+            <span class="s">&#39;vode&#39;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">&#39;adams&#39;</span><span class="p">,</span> <span class="n">with_jacobian</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">nsteps</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="mi">5</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">)</span>
+    <span class="n">r</span><span class="o">.</span><span class="n">set_initial_value</span><span class="p">(</span><span class="n">Y0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">r</span><span class="o">.</span><span class="n">set_f_params</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">Ndata</span><span class="p">,</span><span class="n">cubic</span><span class="p">)</span><span class="o">.</span><span class="n">set_jac_params</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">Ndata</span><span class="p">,</span><span class="n">cubic</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tau</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">Y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">Y0</span>
+        <span class="n">istart</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">istart</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">istart</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">tau</span><span class="p">)):</span>
+        <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">tau</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">successful</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;Fail at tau =&quot;</span><span class="p">,</span> <span class="n">tau</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">Y</span>
+</div>
+<div class="viewcode-block" id="findGeodesics"><a class="viewcode-back" href="../../geodesics.html#bubble_collisions.geodesics.findGeodesics">[docs]</a><span class="k">def</span> <span class="nf">findGeodesics</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">chris_fname</span><span class="p">,</span> <span class="n">fields_fname</span><span class="p">,</span> <span class="n">xi0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">cubic</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">integratorName</span><span class="o">=</span><span class="s">&#39;vode&#39;</span><span class="p">,</span> <span class="n">min_simulated_N</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">**</span><span class="n">intargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Integrate a grid of geodesics, returning the coordinates, fields, metric</span>
+<span class="sd">    functions, and Christoffel symbols along the grid.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    xi : list</span>
+<span class="sd">        The different geodesic trajectories which should be integrated.</span>
+<span class="sd">    tau : list</span>
+<span class="sd">        Proper times at which to save the geodesics</span>
+<span class="sd">    chris_fname : string</span>
+<span class="sd">        File name for the christoffel symbols.</span>
+<span class="sd">    fields_fname : string</span>
+<span class="sd">        File name for the fields and metrics functions.</span>
+<span class="sd">    cubic : bool, optional</span>
+<span class="sd">        If True (default), use cubic interpolation along simulation grid.</span>
+<span class="sd">        If False, use linear interpolation.</span>
+<span class="sd">    integratorName : string, optional</span>
+<span class="sd">        Integrator to use with :class:`scipy.integrate.ode`.</span>
+<span class="sd">    min_simulated_N : float, optional</span>
+<span class="sd">        Raise an error if the simulation didn&#39;t reach at least this value.</span>
+<span class="sd">        Has no other affect.</span>
+<span class="sd">    intargs</span>
+<span class="sd">        Extra arguments to pass to the integrator.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :</span>
+<span class="sd">        A dictionary containing the coordinates, fields, metric functions, and </span>
+<span class="sd">        Christoffel symbols. The keys *xi* and *tau* are the same as the </span>
+<span class="sd">        input values. Each other key corresponds to a multi-dimensional array</span>
+<span class="sd">        with the first index corresponding to *tau* and the second index</span>
+<span class="sd">        corresponding to *xi*.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">Loading file &#39;</span><span class="si">%s</span><span class="s">&#39;...&quot;</span> <span class="o">%</span> <span class="n">chris_fname</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">readFromFile</span><span class="p">(</span><span class="n">chris_fname</span><span class="p">)</span>
+    <span class="n">Ndata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">min_simulated_N</span> <span class="o">&gt;</span> <span class="n">Ndata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s">&quot;File &#39;</span><span class="si">%s</span><span class="s">&#39; does not simulate up to &#39;min_simulated_N.</span><span class="se">\n</span><span class="s">&#39;&quot;</span>
+            <span class="s">&quot;Ndata[-1] = </span><span class="si">%s</span><span class="s">; min_simulated_N = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span>
+            <span class="p">(</span><span class="n">chris_fname</span><span class="p">,</span> <span class="n">Ndata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">min_simulated_N</span><span class="p">))</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">tau</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">xi</span><span class="p">),</span> <span class="mi">4</span><span class="p">))</span> <span class="c"># The geodesics</span>
+    <span class="k">print</span> <span class="s">&quot;Running geodesics... &quot;</span>
+    <span class="n">di_print</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span> <span class="o">//</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xi</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="n">di_print</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%i</span><span class="s"> &quot;</span><span class="o">%</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="n">Y</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">runSingleGeo</span><span class="p">(</span><span class="n">xi</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">tau</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">Ndata</span><span class="p">,</span> <span class="n">xi0</span><span class="p">,</span>
+            <span class="n">cubic</span><span class="p">,</span> <span class="n">integratorName</span><span class="p">,</span> <span class="o">**</span><span class="n">intargs</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">Loading Christoffel symbols...&quot;</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="n">N</span><span class="p">,</span><span class="n">x</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">Y</span><span class="p">[:,:,</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">valsOnGrid</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">Ndata</span><span class="p">)</span>
+    <span class="c"># make sure to free up the memory before loading the next array:</span>
+    <span class="k">del</span> <span class="n">data</span><span class="p">,</span> <span class="n">Ndata</span><span class="p">;</span> <span class="n">collect_garbage</span><span class="p">()</span>
+    <span class="k">print</span> <span class="s">&quot;Loading file &#39;</span><span class="si">%s</span><span class="s">&#39;...&quot;</span> <span class="o">%</span> <span class="n">fields_fname</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">readFromFile</span><span class="p">(</span><span class="n">fields_fname</span><span class="p">)</span>
+    <span class="n">Ndata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">])</span>
+    <span class="k">print</span> <span class="s">&quot;Loading field values...&quot;</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="n">F</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">valsOnGrid</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">Ndata</span><span class="p">)</span>
+    <span class="c"># make sure to free up the memory before loading the next array</span>
+    <span class="k">del</span> <span class="n">data</span><span class="p">,</span> <span class="n">Ndata</span><span class="p">;</span> <span class="n">collect_garbage</span><span class="p">()</span>
+    <span class="k">print</span> <span class="s">&quot;Assembling output dictionary...&quot;</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="n">rdict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">ny</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">nfields</span> <span class="o">=</span> <span class="p">(</span><span class="n">ny</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span>
+    <span class="n">rdict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="n">xi</span> <span class="o">=</span>     <span class="n">xi</span><span class="p">,</span>  <span class="c"># xi and tau define the coordinates of the geodesics</span>
+        <span class="n">tau</span> <span class="o">=</span>    <span class="n">tau</span><span class="p">,</span>
+        <span class="n">N</span> <span class="o">=</span>      <span class="n">Y</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">dNdt</span> <span class="o">=</span>   <span class="n">Y</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">x</span> <span class="o">=</span>      <span class="n">Y</span><span class="p">[:,:,</span><span class="mi">2</span><span class="p">],</span>
+        <span class="n">dxdt</span> <span class="o">=</span>   <span class="n">Y</span><span class="p">[:,:,</span><span class="mi">3</span><span class="p">],</span>
+        <span class="c"># For the following, changing the third index gets us </span>
+        <span class="c"># the derivatives d/dN, d/dx and d2/dNdx</span>
+        <span class="n">alpha</span> <span class="o">=</span>  <span class="n">F</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span>
+        <span class="n">a</span> <span class="o">=</span>      <span class="n">F</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">phi</span> <span class="o">=</span>    <span class="n">F</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">nfields</span><span class="p">],</span>
+        <span class="n">Pi</span> <span class="o">=</span>     <span class="n">F</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">,</span> <span class="n">nfields</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">nfields</span><span class="p">],</span>
+        <span class="c"># just load up all the Christoffels in one. Ignore derivatives.</span>
+        <span class="n">Gamma</span> <span class="o">=</span>  <span class="n">G</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">,:]</span>
+        <span class="p">)</span>
+    <span class="n">rdict</span><span class="p">[</span><span class="s">&quot;dNdxi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deriv14</span><span class="p">(</span><span class="n">rdict</span><span class="p">[</span><span class="s">&quot;N&quot;</span><span class="p">],</span> <span class="n">xi</span><span class="p">)</span>
+    <span class="n">rdict</span><span class="p">[</span><span class="s">&quot;dxdxi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deriv14</span><span class="p">(</span><span class="n">rdict</span><span class="p">[</span><span class="s">&quot;x&quot;</span><span class="p">],</span> <span class="n">xi</span><span class="p">)</span>
+    <span class="n">rdict</span><span class="p">[</span><span class="s">&quot;dphidt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deriv14</span><span class="p">(</span><span class="n">rdict</span><span class="p">[</span><span class="s">&quot;phi&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">tau</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">print</span> <span class="s">&quot;Done.&quot;</span>
+    <span class="k">return</span> <span class="n">rdict</span>
+
+    </div>
+<div class="viewcode-block" id="interpGeos"><a class="viewcode-back" href="../../geodesics.html#bubble_collisions.geodesics.interpGeos">[docs]</a><span class="k">def</span> <span class="nf">interpGeos</span><span class="p">(</span><span class="n">xiP</span><span class="p">,</span> <span class="n">tauP</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Does a simple interpolation along the xi-tau grid.</span>
+<span class="sd">    Outputs the value on the grid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nxi</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&quot;xi&quot;</span><span class="p">])</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">nxi</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">ixi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&quot;xi&quot;</span><span class="p">],</span> <span class="n">xiP</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">ixi</span><span class="p">[</span><span class="n">ixi</span> <span class="o">&gt;</span> <span class="n">nxi</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">nxi</span><span class="o">-</span><span class="mi">2</span>
+    <span class="n">ixi</span><span class="p">[</span><span class="n">ixi</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">ntau</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&quot;tau&quot;</span><span class="p">])</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">ntau</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">itau</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&quot;tau&quot;</span><span class="p">],</span> <span class="n">tauP</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">itau</span><span class="p">[</span><span class="n">itau</span> <span class="o">&gt;</span> <span class="n">ntau</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">ntau</span><span class="o">-</span><span class="mi">2</span>
+    <span class="n">itau</span><span class="p">[</span><span class="n">itau</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">dxi</span> <span class="o">=</span> <span class="p">(</span><span class="n">xiP</span><span class="o">-</span><span class="n">data</span><span class="p">[</span><span class="s">&quot;xi&quot;</span><span class="p">][</span><span class="n">ixi</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&quot;xi&quot;</span><span class="p">][</span><span class="n">ixi</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">data</span><span class="p">[</span><span class="s">&quot;xi&quot;</span><span class="p">][</span><span class="n">ixi</span><span class="p">])</span>
+    <span class="n">dtau</span> <span class="o">=</span> <span class="p">(</span><span class="n">tauP</span><span class="o">-</span><span class="n">data</span><span class="p">[</span><span class="s">&quot;tau&quot;</span><span class="p">][</span><span class="n">itau</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&quot;tau&quot;</span><span class="p">][</span><span class="n">itau</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">data</span><span class="p">[</span><span class="s">&quot;tau&quot;</span><span class="p">][</span><span class="n">itau</span><span class="p">])</span>
+
+    <span class="n">v1</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">itau</span><span class="p">,</span><span class="n">ixi</span><span class="p">]</span>
+    <span class="n">v2</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">itau</span><span class="p">,</span><span class="n">ixi</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">v3</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">itau</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">ixi</span><span class="p">]</span>
+    <span class="n">v4</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">itau</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">ixi</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dxi</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">v1</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+        <span class="n">dxi</span> <span class="o">=</span> <span class="n">dxi</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        <span class="n">dtau</span> <span class="o">=</span> <span class="n">dtau</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">v1</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">dxi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">dtau</span><span class="p">)</span> <span class="o">+</span> <span class="n">v2</span><span class="o">*</span><span class="n">dxi</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">dtau</span><span class="p">)</span> <span class="o">+</span> <span class="n">v3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">dxi</span><span class="p">)</span><span class="o">*</span><span class="n">dtau</span> <span class="o">+</span> <span class="n">v4</span><span class="o">*</span><span class="n">dxi</span><span class="o">*</span><span class="n">dtau</span>
+    </div>
+<div class="viewcode-block" id="observerMetric"><a class="viewcode-back" href="../../geodesics.html#bubble_collisions.geodesics.observerMetric">[docs]</a><span class="k">def</span> <span class="nf">observerMetric</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span> <span class="n">eta</span><span class="p">,</span> <span class="n">geoData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function returns a dictionary containing the metric at time slice tau</span>
+<span class="sd">    and at observer Cartesian coordinates X, Y (with Z=0) in the synchronous</span>
+<span class="sd">    gauge, and at an observer position given by xi0 = eta </span>
+<span class="sd">    (eta represents a boost of the simulation coordinates, with </span>
+<span class="sd">    (cosh(eta) = gamma)).</span>
+<span class="sd">    It also returns the field and its time (tau) derivative at the specified </span>
+<span class="sd">    points.</span>
+<span class="sd">    </span>
+<span class="sd">    tau, X, Y, and eta should all be numpy arrays that are broadcastable to the </span>
+<span class="sd">    same shape. </span>
+
+<span class="sd">    geoData should be the dictionary of arrays output by :func:`findGeodesics`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># First, get the primed (collision frame) coords in terms of the unprimed (observation) coords</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+
+    <span class="n">R24</span> <span class="o">=</span> <span class="mf">0.25</span><span class="o">*</span><span class="p">(</span><span class="n">X</span><span class="o">*</span><span class="n">X</span><span class="o">+</span><span class="n">Y</span><span class="o">*</span><span class="n">Y</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">cosh</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span> <span class="c"># gamma</span>
+    <span class="n">gb</span> <span class="o">=</span> <span class="n">sinh</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span> <span class="c"># gamma*beta</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">R24</span><span class="p">)</span> <span class="o">+</span> <span class="n">g</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">R24</span><span class="p">)</span> <span class="o">+</span> <span class="n">gb</span><span class="o">*</span><span class="n">X</span>
+
+    <span class="n">XP</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">g</span><span class="o">*</span><span class="n">X</span> <span class="o">+</span> <span class="n">gb</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">R24</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="n">D</span>
+    <span class="n">YP</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">Y</span> <span class="o">/</span> <span class="n">D</span>
+
+    <span class="n">dDdX</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">g</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">X</span> <span class="o">+</span> <span class="n">gb</span>
+    <span class="n">dDdY</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">g</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">Y</span>
+    <span class="n">dXPdX</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">g</span> <span class="o">+</span> <span class="n">gb</span><span class="o">*</span><span class="n">X</span><span class="p">)</span><span class="o">/</span><span class="n">D</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">g</span><span class="o">*</span><span class="n">X</span> <span class="o">+</span> <span class="n">gb</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">R24</span><span class="p">))</span><span class="o">*</span><span class="n">dDdX</span><span class="o">/</span><span class="n">D</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">dXPdY</span> <span class="o">=</span> <span class="p">(</span><span class="n">gb</span><span class="o">*</span><span class="n">Y</span><span class="p">)</span><span class="o">/</span><span class="n">D</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">g</span><span class="o">*</span><span class="n">X</span> <span class="o">+</span> <span class="n">gb</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">R24</span><span class="p">))</span><span class="o">*</span><span class="n">dDdY</span><span class="o">/</span><span class="n">D</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">dYPdX</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">Y</span><span class="o">*</span><span class="n">dDdX</span><span class="o">/</span><span class="n">D</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">dYPdY</span> <span class="o">=</span> <span class="mi">2</span><span class="o">/</span><span class="n">D</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">Y</span><span class="o">*</span><span class="n">dDdY</span><span class="o">/</span><span class="n">D</span><span class="o">**</span><span class="mi">2</span>
+
+    <span class="c"># Then get the geodesic coordinates in terms of the primed coordinates</span>
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">arctanh</span><span class="p">(</span> <span class="n">YP</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">0.25</span><span class="o">*</span><span class="p">(</span><span class="n">XP</span><span class="o">*</span><span class="n">XP</span><span class="o">+</span><span class="n">YP</span><span class="o">*</span><span class="n">YP</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+    <span class="n">xi</span> <span class="o">=</span> <span class="n">arcsinh</span><span class="p">(</span> <span class="n">XP</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mf">0.25</span><span class="o">*</span><span class="p">(</span><span class="n">XP</span><span class="o">*</span><span class="n">XP</span><span class="o">+</span><span class="n">YP</span><span class="o">*</span><span class="n">YP</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+
+    <span class="n">cosh_rho</span><span class="p">,</span> <span class="n">sinh_rho</span><span class="p">,</span> <span class="n">cosh_xi</span><span class="p">,</span> <span class="n">sinh_xi</span> <span class="o">=</span> <span class="n">cosh</span><span class="p">(</span><span class="n">rho</span><span class="p">),</span> <span class="n">sinh</span><span class="p">(</span><span class="n">rho</span><span class="p">),</span> <span class="n">cosh</span><span class="p">(</span><span class="n">xi</span><span class="p">),</span> <span class="n">sinh</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span>
+
+    <span class="n">RP24</span> <span class="o">=</span> <span class="p">(</span><span class="n">XP</span><span class="o">*</span><span class="n">XP</span><span class="o">+</span><span class="n">YP</span><span class="o">*</span><span class="n">YP</span><span class="p">)</span><span class="o">*</span><span class="mf">0.25</span>
+    <span class="n">dxidXP</span> <span class="o">=</span> <span class="p">(</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">RP24</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">XP</span><span class="o">*</span><span class="n">XP</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">RP24</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span> <span class="o">/</span> <span class="n">cosh_xi</span>
+    <span class="n">dxidYP</span> <span class="o">=</span> <span class="p">(</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">XP</span><span class="o">*</span><span class="n">YP</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">RP24</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span> <span class="o">/</span> <span class="n">cosh_xi</span>
+    <span class="n">drhodYP</span> <span class="o">=</span> <span class="p">(</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">RP24</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">YP</span><span class="o">*</span><span class="n">YP</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">RP24</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span> <span class="o">*</span> <span class="n">cosh_rho</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">drhodXP</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">XP</span><span class="o">*</span><span class="n">YP</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">RP24</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span> <span class="o">*</span> <span class="n">cosh_rho</span><span class="o">**</span><span class="mi">2</span>
+
+
+    <span class="n">cosh_rho</span><span class="p">,</span> <span class="n">sinh_rho</span><span class="p">,</span> <span class="n">cosh_xi</span><span class="p">,</span> <span class="n">sinh_xi</span> <span class="o">=</span> <span class="n">cosh</span><span class="p">(</span><span class="n">rho</span><span class="p">),</span> <span class="n">sinh</span><span class="p">(</span><span class="n">rho</span><span class="p">),</span> <span class="n">cosh</span><span class="p">(</span><span class="n">xi</span><span class="p">),</span> <span class="n">sinh</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span>
+
+    <span class="c"># Finally, get the simulation data from the geodesic coords.</span>
+
+    <span class="n">N</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">geoData</span><span class="p">,</span> <span class="s">&quot;N&quot;</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">geoData</span><span class="p">,</span> <span class="s">&quot;x&quot;</span><span class="p">)</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">geoData</span><span class="p">,</span> <span class="s">&quot;alpha&quot;</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">geoData</span><span class="p">,</span> <span class="s">&quot;a&quot;</span><span class="p">)</span>
+    <span class="n">dNdxi</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">geoData</span><span class="p">,</span> <span class="s">&quot;dNdxi&quot;</span><span class="p">)</span>
+    <span class="n">dNdtau</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">geoData</span><span class="p">,</span> <span class="s">&quot;dNdt&quot;</span><span class="p">)</span>
+    <span class="n">dxdxi</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">geoData</span><span class="p">,</span> <span class="s">&quot;dxdxi&quot;</span><span class="p">)</span>
+    <span class="n">dxdtau</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">geoData</span><span class="p">,</span> <span class="s">&quot;dxdt&quot;</span><span class="p">)</span>
+    <span class="n">phi</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">geoData</span><span class="p">,</span> <span class="s">&quot;phi&quot;</span><span class="p">)</span>
+    <span class="n">dphidtau</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">geoData</span><span class="p">,</span> <span class="s">&quot;dphidt&quot;</span><span class="p">)</span>
+    <span class="n">dchidrho</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">dNdXP</span> <span class="o">=</span> <span class="n">dNdxi</span><span class="o">*</span><span class="n">dxidXP</span>
+    <span class="n">dNdYP</span> <span class="o">=</span> <span class="n">dNdxi</span><span class="o">*</span><span class="n">dxidYP</span>
+    <span class="n">dxdXP</span> <span class="o">=</span> <span class="n">dxdxi</span><span class="o">*</span><span class="n">dxidXP</span>
+    <span class="n">dxdYP</span> <span class="o">=</span> <span class="n">dxdxi</span><span class="o">*</span><span class="n">dxidYP</span>
+
+    <span class="n">dNdX</span> <span class="o">=</span> <span class="n">dNdXP</span><span class="o">*</span><span class="n">dXPdX</span> <span class="o">+</span> <span class="n">dNdYP</span><span class="o">*</span><span class="n">dYPdX</span>
+    <span class="n">dNdY</span> <span class="o">=</span> <span class="n">dNdXP</span><span class="o">*</span><span class="n">dXPdY</span> <span class="o">+</span> <span class="n">dNdYP</span><span class="o">*</span><span class="n">dYPdY</span>
+    <span class="n">dxdX</span> <span class="o">=</span> <span class="n">dxdXP</span><span class="o">*</span><span class="n">dXPdX</span> <span class="o">+</span> <span class="n">dxdYP</span><span class="o">*</span><span class="n">dYPdX</span>
+    <span class="n">dxdY</span> <span class="o">=</span> <span class="n">dxdXP</span><span class="o">*</span><span class="n">dXPdY</span> <span class="o">+</span> <span class="n">dxdYP</span><span class="o">*</span><span class="n">dYPdY</span>
+    <span class="n">dchidX</span> <span class="o">=</span> <span class="n">dchidrho</span> <span class="o">*</span> <span class="p">(</span><span class="n">drhodXP</span><span class="o">*</span><span class="n">dXPdX</span> <span class="o">+</span> <span class="n">drhodYP</span><span class="o">*</span><span class="n">dYPdX</span><span class="p">)</span>
+    <span class="n">dchidY</span> <span class="o">=</span> <span class="n">dchidrho</span> <span class="o">*</span> <span class="p">(</span><span class="n">drhodXP</span><span class="o">*</span><span class="n">dXPdY</span> <span class="o">+</span> <span class="n">drhodYP</span><span class="o">*</span><span class="n">dYPdY</span><span class="p">)</span>
+
+    <span class="c"># Now we&#39;re ready to calculate the metric!</span>
+    <span class="n">gchichi</span> <span class="o">=</span> <span class="n">sinh</span><span class="p">(</span><span class="n">N</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">gNN</span> <span class="o">=</span> <span class="o">-</span><span class="n">alpha</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">gxx</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="o">*</span><span class="n">cosh</span><span class="p">(</span><span class="n">N</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span>
+
+    <span class="n">gXX</span> <span class="o">=</span> <span class="n">gNN</span><span class="o">*</span><span class="n">dNdX</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">gxx</span><span class="o">*</span><span class="n">dxdX</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">gchichi</span><span class="o">*</span><span class="n">dchidX</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">gYY</span> <span class="o">=</span> <span class="n">gNN</span><span class="o">*</span><span class="n">dNdY</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">gxx</span><span class="o">*</span><span class="n">dxdY</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">gchichi</span><span class="o">*</span><span class="n">dchidY</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">gXY</span> <span class="o">=</span> <span class="n">gNN</span><span class="o">*</span><span class="n">dNdX</span><span class="o">*</span><span class="n">dNdY</span> <span class="o">+</span> <span class="n">gxx</span><span class="o">*</span><span class="n">dxdX</span><span class="o">*</span><span class="n">dxdY</span> <span class="o">+</span> <span class="n">gchichi</span><span class="o">*</span><span class="n">dchidX</span><span class="o">*</span><span class="n">dchidY</span>
+    <span class="n">gtt</span> <span class="o">=</span> <span class="n">gNN</span><span class="o">*</span><span class="n">dNdtau</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">gxx</span><span class="o">*</span><span class="n">dxdtau</span><span class="o">**</span><span class="mi">2</span> <span class="c"># should be -1</span>
+    <span class="n">gtX</span> <span class="o">=</span> <span class="n">gNN</span><span class="o">*</span><span class="n">dNdtau</span><span class="o">*</span><span class="n">dNdX</span> <span class="o">+</span> <span class="n">gxx</span><span class="o">*</span><span class="n">dxdtau</span><span class="o">*</span><span class="n">dxdX</span> <span class="c"># should be 0</span>
+    <span class="n">gtY</span> <span class="o">=</span> <span class="n">gNN</span><span class="o">*</span><span class="n">dNdtau</span><span class="o">*</span><span class="n">dNdY</span> <span class="o">+</span> <span class="n">gxx</span><span class="o">*</span><span class="n">dxdtau</span><span class="o">*</span><span class="n">dxdY</span> <span class="c"># should be 0</span>
+    <span class="c"># have to do gZZ carefully due to coordinate singularity</span>
+    <span class="n">gZZ</span> <span class="o">=</span> <span class="p">(</span> <span class="n">sinh</span><span class="p">(</span><span class="n">N</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">cosh_xi</span><span class="o">*</span><span class="n">cosh</span><span class="p">(</span><span class="n">rho</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">cosh</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="n">D</span><span class="p">)</span> <span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+
+    <span class="n">outvars</span> <span class="o">=</span> <span class="n">gXX</span><span class="p">,</span> <span class="n">gYY</span><span class="p">,</span> <span class="n">gZZ</span><span class="p">,</span> <span class="n">gXY</span><span class="p">,</span> <span class="n">gtt</span><span class="p">,</span> <span class="n">gtX</span><span class="p">,</span> <span class="n">gtY</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">dphidtau</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span>
+    <span class="n">outkeys</span> <span class="o">=</span> <span class="s">&quot;gXX, gYY, gZZ, gXY, gtt, gtX, gtY, phi, phidot, X, Y&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="p">)</span>
+    <span class="n">outdict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">outvars</span><span class="p">,</span> <span class="n">outkeys</span><span class="p">):</span>
+        <span class="n">outdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">var</span>
+    <span class="k">return</span> <span class="n">outdict</span>
+    </div>
+<div class="viewcode-block" id="scaleFactor"><a class="viewcode-back" href="../../geodesics.html#bubble_collisions.geodesics.scaleFactor">[docs]</a><span class="k">def</span> <span class="nf">scaleFactor</span><span class="p">(</span><span class="n">geos0</span><span class="p">,</span> <span class="n">tau</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the scale factor and Hubble parameter at the given proper time</span>
+<span class="sd">    *tau* along the geodesic grid *geos0* output by :func:`findGeodesics` for</span>
+<span class="sd">    an unperturbed (no collision) simulation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">xi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">tau</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tau</span><span class="p">)</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">geos0</span><span class="p">,</span> <span class="s">&quot;N&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tau</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">dNdt</span> <span class="o">=</span> <span class="n">interpGeos</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">tau</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">geos0</span><span class="p">,</span> <span class="s">&quot;dNdt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tau</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">sinh</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+    <span class="n">H</span> <span class="o">=</span> <span class="n">dNdt</span> <span class="o">/</span> <span class="n">tanh</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">a</span><span class="p">,</span> <span class="n">H</span>
+    </div>
+<div class="viewcode-block" id="perturbationsFromMetric"><a class="viewcode-back" href="../../geodesics.html#bubble_collisions.geodesics.perturbationsFromMetric">[docs]</a><span class="k">def</span> <span class="nf">perturbationsFromMetric</span><span class="p">(</span><span class="n">g0</span><span class="p">,</span> <span class="n">g1</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">divideOutCurvature</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the comoving cuvature perturbation R from metric information</span>
+<span class="sd">    in synchronous gauge Cartesian coordinates.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    g0 : dictionary</span>
+<span class="sd">        The unperturbed metric given by :func:`observerMetric`.</span>
+<span class="sd">    g1 : dictionary</span>
+<span class="sd">        The perturbed metric given by :func:`observerMetric`.</span>
+<span class="sd">    a : float</span>
+<span class="sd">        The scale factor.</span>
+<span class="sd">    H : float</span>
+<span class="sd">        The Hubble parameter.</span>
+<span class="sd">    divideOutCurvature : bool, optional</span>
+<span class="sd">        If True (default), the metric is divided by the overall negative</span>
+<span class="sd">        curvature that&#39;s present in the unperturbed bubble.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :</span>
+<span class="sd">        [D, E, H*deltaphi/phidot, R]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">g0</span><span class="p">[</span><span class="s">&quot;gXX&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">G0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">+</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">G0</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">G0</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">G0</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="n">G0</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">G0</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> \
+        <span class="n">g0</span><span class="p">[</span><span class="s">&quot;gXX&quot;</span><span class="p">],</span> <span class="n">g0</span><span class="p">[</span><span class="s">&quot;gYY&quot;</span><span class="p">],</span> <span class="n">g0</span><span class="p">[</span><span class="s">&quot;gZZ&quot;</span><span class="p">],</span> <span class="n">g0</span><span class="p">[</span><span class="s">&quot;gXY&quot;</span><span class="p">],</span> <span class="n">g0</span><span class="p">[</span><span class="s">&quot;gXY&quot;</span><span class="p">]</span>
+    <span class="n">G1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">+</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">G1</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">G1</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">G1</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="n">G1</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">G1</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> \
+        <span class="n">g1</span><span class="p">[</span><span class="s">&quot;gXX&quot;</span><span class="p">],</span> <span class="n">g1</span><span class="p">[</span><span class="s">&quot;gYY&quot;</span><span class="p">],</span> <span class="n">g1</span><span class="p">[</span><span class="s">&quot;gZZ&quot;</span><span class="p">],</span> <span class="n">g1</span><span class="p">[</span><span class="s">&quot;gXY&quot;</span><span class="p">],</span> <span class="n">g1</span><span class="p">[</span><span class="s">&quot;gXY&quot;</span><span class="p">]</span>
+    <span class="n">dG</span> <span class="o">=</span> <span class="p">(</span><span class="n">G1</span><span class="o">-</span><span class="n">G0</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">)[</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">divideOutCurvature</span><span class="p">):</span>
+        <span class="n">dG</span> <span class="o">*=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mf">0.25</span><span class="o">*</span><span class="p">(</span><span class="n">g0</span><span class="p">[</span><span class="s">&quot;X&quot;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">g0</span><span class="p">[</span><span class="s">&quot;Y&quot;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span>
+
+    <span class="n">D</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">dG</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">dG</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">dG</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="mf">6.0</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="mi">1</span><span class="o">*</span><span class="n">dG</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">E</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">2</span><span class="o">*</span><span class="n">D</span>
+    <span class="n">Exx</span> <span class="o">=</span> <span class="n">E</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">deltaphi</span> <span class="o">=</span> <span class="p">(</span><span class="n">g1</span><span class="p">[</span><span class="s">&quot;phi&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">g0</span><span class="p">[</span><span class="s">&quot;phi&quot;</span><span class="p">])[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">phidot</span> <span class="o">=</span> <span class="p">(</span><span class="n">g0</span><span class="p">[</span><span class="s">&quot;phidot&quot;</span><span class="p">])[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">R</span> <span class="o">=</span> <span class="n">D</span> <span class="o">+</span> <span class="mf">0.25</span><span class="o">*</span><span class="n">Exx</span> <span class="o">+</span> <span class="n">H</span><span class="o">*</span><span class="n">deltaphi</span><span class="o">/</span><span class="n">phidot</span>
+
+    <span class="k">return</span> <span class="n">D</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">H</span><span class="o">*</span><span class="n">deltaphi</span><span class="o">/</span><span class="n">phidot</span><span class="p">,</span> <span class="n">R</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

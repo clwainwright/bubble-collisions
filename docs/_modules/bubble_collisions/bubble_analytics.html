@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>bubble_collisions.bubble_analytics &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <h1>Source code for bubble_collisions.bubble_analytics</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides functions for finding (semi-)analytic approximations</span>
+<span class="sd">to the late-time field values and the comoving curvature perturbation.</span>
+
+<span class="sd">These used to live in :mod:`coordAndGeos` </span>
+<span class="sd">(now :mod:`bubble_collisions.geodesics`), but they&#39;re not really related</span>
+<span class="sd">to anything else in that file.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">bubble_collisions</span> <span class="kn">import</span> <span class="n">simulation</span>
+
+<div class="viewcode-block" id="analytic_delta_phi"><a class="viewcode-back" href="../../bubble_analytics.html#bubble_collisions.bubble_analytics.analytic_delta_phi">[docs]</a><span class="k">def</span> <span class="nf">analytic_delta_phi</span><span class="p">(</span><span class="n">x_out</span><span class="p">,</span> <span class="n">x_in</span><span class="p">,</span> <span class="n">phi_in</span><span class="p">,</span> <span class="n">eta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Evolve a wave to late times. Assumes the wave is moving to the left.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x_out : array_like</span>
+<span class="sd">        The values of x at which the field should be calculated</span>
+<span class="sd">    x_in : array_like</span>
+<span class="sd">    phi_in : array_like</span>
+<span class="sd">        The field as a function of x at the early time.</span>
+<span class="sd">    eta : float</span>
+<span class="sd">        Future causal boundary of the waveform. Generally equal to </span>
+<span class="sd">        0.5*(pi-xsep).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y_in</span> <span class="o">=</span> <span class="n">phi_in</span>
+    <span class="n">x2</span> <span class="o">=</span> <span class="n">x_in</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">x_in</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">delta_y</span> <span class="o">=</span> <span class="n">y_in</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">y_in</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">dydx</span> <span class="o">=</span> <span class="n">delta_y</span> <span class="o">/</span> <span class="p">(</span><span class="n">x2</span><span class="o">-</span><span class="n">x1</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x_out</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+    <span class="n">dxA</span> <span class="o">=</span> <span class="n">x</span><span class="o">-</span><span class="n">x2</span>
+    <span class="n">dxB</span> <span class="o">=</span> <span class="n">x</span><span class="o">-</span><span class="n">x1</span>
+    <span class="c"># delta_phi = dydx * int_dxA^dxB { phi_step(u) du }</span>
+    <span class="k">def</span> <span class="nf">clamp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">a</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="n">s</span> <span class="o">+</span> <span class="n">a</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">s</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">b</span><span class="o">-</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">*</span><span class="n">s</span> <span class="o">+</span> <span class="n">b</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">s</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">halfclamp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">a</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">a</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">*</span><span class="n">s</span> <span class="o">+</span> <span class="n">a</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">C</span> <span class="o">=</span> <span class="n">halfclamp</span><span class="p">(</span><span class="n">dxA</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">halfclamp</span><span class="p">(</span><span class="n">dxB</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">clamp</span><span class="p">(</span><span class="n">dxB</span><span class="p">,</span> <span class="o">-</span><span class="n">eta</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">clamp</span><span class="p">(</span><span class="n">dxA</span><span class="p">,</span> <span class="o">-</span><span class="n">eta</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">step_integral</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">eta</span><span class="p">):</span>
+        <span class="n">y2</span> <span class="o">=</span> <span class="n">y</span><span class="o">/</span><span class="n">eta</span>
+        <span class="k">return</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">rval</span> <span class="o">=</span> <span class="n">step_integral</span><span class="p">(</span><span class="n">B</span><span class="p">,</span><span class="n">eta</span><span class="p">)</span> <span class="o">-</span> <span class="n">step_integral</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">eta</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">D</span><span class="o">-</span><span class="n">C</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">rval</span><span class="o">*</span><span class="n">dydx</span><span class="p">,</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="analyticPerturbations"><a class="viewcode-back" href="../../bubble_analytics.html#bubble_collisions.bubble_analytics.analyticPerturbations">[docs]</a><span class="k">def</span> <span class="nf">analyticPerturbations</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">xsep</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find approximate perturbation from the bubble wall profile at the collision.</span>
+
+<span class="sd">    This uses a number of approximations: the metric functions are 1 (test</span>
+<span class="sd">    fields on de Sitter space), the potential is approximately linear, and xsep</span>
+<span class="sd">    is big enough so that ``cosh(N) = (e^N)/2`` by the time the bubbles collide.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    xi : array_like</span>
+<span class="sd">    fname : string</span>
+<span class="sd">        File name for simulation output fields</span>
+<span class="sd">    xsep : float</span>
+<span class="sd">        The bubble separation</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    The perturbation as a function of the input xi.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># sin(x) = tanh(N) at the boundary</span>
+    <span class="n">xi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span>
+    <span class="n">col_N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctanh</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">xsep</span><span class="p">))</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">readFromFile</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">all_N</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+    <span class="n">col_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">all_N</span><span class="p">,</span> <span class="n">col_N</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">col_index</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">phi</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">col_index</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">,:,</span><span class="mi">0</span><span class="p">]</span> <span class="c"># goes derivs, x index, fields index</span>
+    <span class="n">phidot</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">col_index</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">,:,</span><span class="mi">0</span><span class="p">]</span> <span class="c"># goes derivs, x index, fields index</span>
+    <span class="c"># We want the wall of the collision bubble, so pick x &gt; xsep</span>
+    <span class="c"># But then we really want this on the left side of the bubble, so reverse</span>
+    <span class="c"># everything and shift the x values</span>
+    <span class="n">phidot</span> <span class="o">=</span> <span class="n">phidot</span><span class="p">[</span><span class="n">x</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c"># center of observation bubble</span>
+    <span class="n">phi</span> <span class="o">=</span> <span class="n">phi</span><span class="p">[</span><span class="n">x</span><span class="o">&gt;</span><span class="n">xsep</span><span class="p">][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">xsep</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="n">x</span><span class="o">&gt;</span><span class="n">xsep</span><span class="p">][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">x_late_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sinh</span><span class="p">(</span><span class="n">xi</span><span class="p">))</span>
+    <span class="n">delta_phi</span> <span class="o">=</span> <span class="n">analytic_delta_phi</span><span class="p">(</span><span class="n">x_late_time</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">-</span><span class="n">xsep</span><span class="p">))</span>
+    <span class="c"># phidot should really be the late-time phidot, not the phidot at the </span>
+    <span class="c"># collision. Luckily we have an approximate expression for evolution of </span>
+    <span class="c"># phidot, so we can transform to to late time</span>
+    <span class="n">phidot</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sinh</span><span class="p">(</span><span class="n">col_N</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">cosh</span><span class="p">(</span><span class="n">col_N</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">cosh</span><span class="p">(</span><span class="n">col_N</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span>
+    <span class="k">return</span> <span class="n">delta_phi</span> <span class="o">/</span> <span class="n">phidot</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">bubble_collisions 2.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

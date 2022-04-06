@@ -1,0 +1,168 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>Welcome to the bubble_collisions documentation! &mdash; bubble_collisions 2.0 documentation</title>
+
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="bubble_collisions 2.0 documentation" href="#" />
+    <link rel="next" title="Package Overview" href="Overview.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Overview.html" title="Package Overview"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+
+  <div class="section" id="welcome-to-the-bubble-collisions-documentation">
+<h1>Welcome to the bubble_collisions documentation!<a class="headerlink" href="#welcome-to-the-bubble-collisions-documentation" title="Permalink to this headline">¶</a></h1>
+<p>The <tt class="docutils literal"><span class="pre">bubble_collisions</span></tt> package contains (or will contain) everything needed to simulate and analyze collisions between bubble universes in an eternal inflation framework. The core code is written in C with a Python interface, and there are several additional Python scripts for analysis.</p>
+<p>The original code was described in <a class="reference external" href="http://arxiv.org/abs/arXiv:1312.1357">arXiv:1312.1357</a>, and later used in <a class="reference external" href="http://arxiv.org/abs/arXiv:1407.2950">arXiv:1407.2950</a> and <a class="reference external" href="https://arxiv.org/abs/1508.03641v1">arXiv:1508.03641</a>.</p>
+<p>Note that in some places I use <em>N</em> to indicate the time variable, which matches the notation in the papers, and in some places I use <em>t</em>, which is much less ambiguous. The <em>N</em> variable can also refer to the relative time step in a simulation region (<span class="math">\(\Delta t \propto 2^N\)</span>).</p>
+</div>
+<div class="section" id="to-do">
+<h1>To do<a class="headerlink" href="#to-do" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li>[x] Create documentation for collisionRunner</li>
+<li>[x] Create documentation for derivsAndSmoothing</li>
+<li>[x] Merge to CosmoTransitions v2</li>
+<li>[x] Reimplement coordsAndGeos.py</li>
+<li>[x] Update full_sky.py (minor) and add documentation</li>
+<li>[x] Update perturbation_fits.py (minor) and add documentation</li>
+<li>[ ] Write up the usage section of the overview.</li>
+</ul>
+</div>
+<div class="section" id="contents">
+<h1>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Overview.html">Package Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Overview.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Overview.html#usage">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="simulation.html#simulation-setup">Simulation setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulation.html#running-the-simulation">Running the simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulation.html#reading-and-interpolation">Reading and interpolation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="models.html#creating-new-models">Creating new models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#base-model">Base Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#inflationary-models">Inflationary Models</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="collisionRunner.html">collisionRunner</a></li>
+<li class="toctree-l1"><a class="reference internal" href="derivsAndSmoothing.html">derivsAndSmoothing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="geodesics.html">geodesics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bubble_analytics.html">bubble_analytics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="full_sky.html">full_sky</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perturbation_fits.html">perturbation_fits</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to the bubble_collisions documentation!</a></li>
+<li><a class="reference internal" href="#to-do">To do</a></li>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Overview.html"
+                        title="next chapter">Package Overview</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Overview.html" title="Package Overview"
+             >next</a> |</li>
+        <li><a href="#">bubble_collisions 2.0 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Carroll L. Wainwright.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
